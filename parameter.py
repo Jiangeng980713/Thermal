@@ -1,4 +1,4 @@
-CELL_SIZE = 20
+CELL_SIZE = 5
 LAYER_LENGTH = 5
 LAMDA = 1
 rb = 1

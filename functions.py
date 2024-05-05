@@ -21,15 +21,50 @@ class Thermal():
         self.diffusion_radius = self.rate * self.heater_radius  # d = 3a
         self.heater_shape = np.zeros((self.heater_radius, self.heater_radius))
         self.Gaussian_heat()
+
         # layer
         self.pointer = [0, 0]
         self.scan_pattern = scan_pattern
+
+        # build matrix
+        self.diag_matrix = np.diag(np.ones(CELL_SIZE))
+        self.ones = np.ones((1,CELL_SIZE))
+        self.zeros = np.zeros((1, CELL_SIZE))
+
+        # upper transactions matrix # C @ (A-B ) @ T = ^T
+        self.A_upper = np.vstack((self.diag_matrix,self.zeros))
+        self.B_upper = np.vstack((self.zeros,self.diag_matrix))
+        self.B_upper[0][0] = 1 # 测试
+        self.C_upper = np.hstack((self.diag_matrix,self.zeros.T))
+        self.T_upper = self.C_upper@(self.A_upper-self.B_upper)
+
+        # lower transactions matrix # C @ (A-B ) @ T = ^T
+        self.A_lower = np.vstack((self.zeros,self.diag_matrix))
+        self.B_lower = np.vstack((self.diag_matrix,self.zeros))
+        self.B_lower[CELL_SIZE][CELL_SIZE-1] = 1 # 测试一下
+        self.C_lower = np.hstack((self.zeros.T, self.diag_matrix))
+        self.T_lower = self.C_lower@(self.A_lower - self.B_lower)
+
+        # right transactions matrix  # T @ (A-B) @ C = ^T
+        self.A_right = np.hstack((self.zeros.T, self.diag_matrix))
+        self.B_right = np.hstack((self.diag_matrix, self.zeros.T))
+        self.B_right[CELL_SIZE-1][CELL_SIZE] = 1  # 测试一下
+        self.C_right = np.vstack((self.zeros, self.diag_matrix))
+        self.T_right = (self.A_right - self.B_right)@self.C_right
+
+        # left transactions matrix  # T @ (A-B) @ C = ^T
+        self.A_left = np.hstack((self.diag_matrix,self.zeros.T))
+        self.B_left = np.hstack((self.zeros.T,self.diag_matrix))
+        self.B_left[0][0] = 1 # 测试
+        self.C_left = np.hstack((self.diag_matrix,self.zeros))
+        self.T_left = (self.A_left-self.B_left)@self.C_left
 
     def Gaussian_heat(self):
         # heat_matrix = np.zeros((self.reaction_radius*2-1,self.reaction_radius*2-1))
         # heat_matrix[self.reaction_radius][self.reaction_radius] = 1
         self.heater_shape = np.array([[0.3, 0.5, 0.3], [0.5, 1, 0.5], [0.3, 0.5, 0.3]])
 
+    # 转化成为矩阵形式，推导一个矩阵形势出来
     def Heat_matrix(self, P, loc):
         Q = 2 * LAMDA * P * exp(-2 * rb ^ 2 / Rb ^ 2) / (pi * Rb ^ 2)
         heat_matrix_temp = np.zeros((CELL_SIZE, CELL_SIZE))
@@ -44,27 +79,40 @@ class Thermal():
         heat_matrix_ = heat_matrix_temp * Q
         return heat_matrix_
 
-    # upper layer convent to air
     def Convention_matrix(self):
+
+        # 当前温度挥发
         U_conv_temp = h * (self.current_T - Ta) / DELTA_Z
         Uconv_matrix = - U_conv_temp * self.current_exist
+
+        # 前一层未被覆盖部分的温度挥发
+        U_conv_temp_ = h * (self.previous_T - Ta) / DELTA_Z
+        Uconv_matrix_ = - U_conv_temp_ * (np.ones((CELL_SIZE, CELL_SIZE)) - self.current_exist)
 
         # 向空气中传导的边界条件（当前没有考虑在内）
         # U_conv_temp_boundary = h * (self.current_T - Ta) / DELTA_Z
         # Uconv_matrix = U_conv_temp * self.boundary
 
-        return Uconv_matrix
+        return Uconv_matrix, Uconv_matrix_
 
-    # diffusion into material
     def Diffusion(self, P, loc):
 
-        # diffuse to material
-        U_total = self.Heat_matrix(P, loc) + self.Convention_matrix()
+        Uconv_now, Uconv_previous = self.Convention_matrix()
+        Us_now = Uconv_now + self.Heat_matrix(P, loc)
+
+
+        T_next = [[2 * self.current_T - self.current_T *
+
+
+                   ] / DELTA_X ^ 2 + \
+                  [2 * self.current_T - self.current_T * (front + behind)] / DELTA_Y ^ 2 + \
+                  [self.current_T * (1 - down)] + Uconv_now / Kt] * ALPHA * t
 
 
 
 
-
+        # second layer
+        T_second = self.previous_T
 
     def Update_step(self, loc):
         self.current_exist[loc[0]][loc[1]] = 1
