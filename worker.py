@@ -3,5 +3,7 @@ import parameter
 from functions import *
 
 path = "stripe"
+thermal = Thermal()
+
 
 

@@ -1,4 +1,4 @@
-CELL_SIZE = 5
+CELL_SIZE = 10
 LAYER_LENGTH = 5
 LAMDA = 1
 rb = 1
@@ -12,3 +12,5 @@ Ta = 25
 CONV = 1
 Kt = 1
 h = 25
+ALPHA = 1
+t = 1

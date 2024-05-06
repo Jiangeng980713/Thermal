@@ -4,60 +4,94 @@ from parameter import *
 
 
 class Thermal():
-    def __init__(self, scan_pattern):
-        # reset
+    def __init__(self):
+
+        # init matrix
         self.heat_loc = (0, 0, 0)
         self.previous_T = np.zeros((CELL_SIZE, CELL_SIZE))
         self.current_T = np.zeros((CELL_SIZE, CELL_SIZE))
-        self.current_exist = np.zeros((CELL_SIZE, CELL_SIZE))
         self.body = np.zeros((CELL_SIZE, CELL_SIZE))
-        # self.boundary = np.zeros((CELL_SIZE, CELL_SIZE))
 
-        # parameter
+        # in-process location
+        self.current_exist = np.zeros((CELL_SIZE, CELL_SIZE))
+        # self.boundary = np.zeros((CELL_SIZE, CELL_SIZE))
+        self.boundary_ = np.zeros((CELL_SIZE, CELL_SIZE))
+        self.boundary_[0, :] = 1
+        self.boundary_[CELL_SIZE - 1, :] = 1
+        self.boundary_[:, 0] = 1
+        self.boundary_[:, CELL_SIZE - 1] = 1
+
+        """ Heater Info """
         self.rate = 3
-        # heat-matrix range
         self.heater_radius = 1
-        # diffusion-matrix range
         self.diffusion_radius = self.rate * self.heater_radius  # d = 3a
         self.heater_shape = np.zeros((self.heater_radius, self.heater_radius))
         self.Gaussian_heat()
-
-        # layer
         self.pointer = [0, 0]
-        self.scan_pattern = scan_pattern
 
+        """ Diffusion Transaction Matrix """
         # build matrix
         self.diag_matrix = np.diag(np.ones(CELL_SIZE))
-        self.ones = np.ones((1,CELL_SIZE))
+        self.ones = np.ones((1, CELL_SIZE))
         self.zeros = np.zeros((1, CELL_SIZE))
 
         # upper transactions matrix # C @ (A-B ) @ T = ^T
-        self.A_upper = np.vstack((self.diag_matrix,self.zeros))
-        self.B_upper = np.vstack((self.zeros,self.diag_matrix))
-        self.B_upper[0][0] = 1 # 测试
-        self.C_upper = np.hstack((self.diag_matrix,self.zeros.T))
-        self.T_upper = self.C_upper@(self.A_upper-self.B_upper)
+        self.A_upper = np.vstack((self.diag_matrix, self.zeros))
+        self.B_upper = np.vstack((self.zeros, self.diag_matrix))
+        self.B_upper[0][0] = 1  # 测试
+        self.C_upper = np.hstack((self.diag_matrix, self.zeros.T))
+        self.T_upper = self.C_upper @ (self.A_upper - self.B_upper)
 
         # lower transactions matrix # C @ (A-B ) @ T = ^T
-        self.A_lower = np.vstack((self.zeros,self.diag_matrix))
-        self.B_lower = np.vstack((self.diag_matrix,self.zeros))
-        self.B_lower[CELL_SIZE][CELL_SIZE-1] = 1 # 测试一下
+        self.A_lower = np.vstack((self.zeros, self.diag_matrix))
+        self.B_lower = np.vstack((self.diag_matrix, self.zeros))
+        self.B_lower[CELL_SIZE][CELL_SIZE - 1] = 1  # 测试一下
         self.C_lower = np.hstack((self.zeros.T, self.diag_matrix))
-        self.T_lower = self.C_lower@(self.A_lower - self.B_lower)
+        self.T_lower = self.C_lower @ (self.A_lower - self.B_lower)
 
         # right transactions matrix  # T @ (A-B) @ C = ^T
         self.A_right = np.hstack((self.zeros.T, self.diag_matrix))
         self.B_right = np.hstack((self.diag_matrix, self.zeros.T))
-        self.B_right[CELL_SIZE-1][CELL_SIZE] = 1  # 测试一下
+        self.B_right[CELL_SIZE - 1][CELL_SIZE] = 1  # 测试一下
         self.C_right = np.vstack((self.zeros, self.diag_matrix))
-        self.T_right = (self.A_right - self.B_right)@self.C_right
+        self.T_right = (self.A_right - self.B_right) @ self.C_right
 
         # left transactions matrix  # T @ (A-B) @ C = ^T
-        self.A_left = np.hstack((self.diag_matrix,self.zeros.T))
-        self.B_left = np.hstack((self.zeros.T,self.diag_matrix))
-        self.B_left[0][0] = 1 # 测试
-        self.C_left = np.hstack((self.diag_matrix,self.zeros))
-        self.T_left = (self.A_left-self.B_left)@self.C_left
+        self.A_left = np.hstack((self.diag_matrix, self.zeros.T))
+        self.B_left = np.hstack((self.zeros.T, self.diag_matrix))
+        self.B_left[0][0] = 1  # 测试
+        self.C_left = np.vstack((self.diag_matrix, self.zeros))
+        self.T_left = (self.A_left - self.B_left) @ self.C_left
+
+        # layer-wise velocity
+        self.Vs = 1
+
+    def check_boundary(self, loc):
+
+        temp = np.zeros((CELL_SIZE, CELL_SIZE))
+
+        # in the middle
+        if 0 < loc[1] < CELL_SIZE - 1:
+            temp[:, 0] = 1                              # left
+            temp[0, :loc[1] + 1] = 1                    # upper
+            temp[CELL_SIZE - 1, :loc[1] + 1] = 1        # lower
+            temp[:, loc[1]] = 1                         # right
+            temp[loc[0]:, loc[1]] = 0                   # remove right
+            temp[loc[0]:, loc[1] - 1] = 1               # add secondary right
+
+        # the left boundary
+        if loc[1] == 0:
+            temp[:loc[0], 0] = 1
+
+        # the right boundary
+        if loc[1] == CELL_SIZE - 1:
+            temp[:, 0] = 1                              # left
+            temp[0, :loc[1] + 1] = 1                    # upper
+            temp[CELL_SIZE - 1, :CELL_SIZE - 2] = 1     # down
+            temp[:loc[0], loc[1]] = 1                   # right-1
+            temp[loc[0]:, loc[1]-1] = 1                 # right-2
+
+        return temp
 
     def Gaussian_heat(self):
         # heat_matrix = np.zeros((self.reaction_radius*2-1,self.reaction_radius*2-1))
@@ -66,7 +100,7 @@ class Thermal():
 
     # 转化成为矩阵形式，推导一个矩阵形势出来
     def Heat_matrix(self, P, loc):
-        Q = 2 * LAMDA * P * exp(-2 * rb ^ 2 / Rb ^ 2) / (pi * Rb ^ 2)
+        Q = 2 * LAMDA * P * exp(-2 * rb ** 2 / Rb ** 2) / (pi * Rb ** 2)
         heat_matrix_temp = np.zeros((CELL_SIZE, CELL_SIZE))
         # 等效热源，3x3加到loc周围的点上，如果3x3内没有cell，则认为没有被加热
         for i in range(len(self.heater_shape[0])):
@@ -79,44 +113,62 @@ class Thermal():
         heat_matrix_ = heat_matrix_temp * Q
         return heat_matrix_
 
-    def Convention_matrix(self):
+    def Convention_matrix(self, loc):
+        # check boundary
+        boundary = self.check_boundary(loc)
 
-        # 当前温度挥发
-        U_conv_temp = h * (self.current_T - Ta) / DELTA_Z
-        Uconv_matrix = - U_conv_temp * self.current_exist
+        # convention from the first layer
+        Uc_temp = h * (self.current_T - Ta) / DELTA_Z
+        Uc_matrix = - Uc_temp * self.current_exist  # 是否应该有"-"号
 
-        # 前一层未被覆盖部分的温度挥发
-        U_conv_temp_ = h * (self.previous_T - Ta) / DELTA_Z
-        Uconv_matrix_ = - U_conv_temp_ * (np.ones((CELL_SIZE, CELL_SIZE)) - self.current_exist)
+        # convention from the uncovered second layer
+        Uc_temp_ = h * (self.previous_T - Ta) / DELTA_Z
+        Uc_matrix_ = - Uc_temp_ * (np.ones((CELL_SIZE, CELL_SIZE)) - self.current_exist)  # 是否应该有"-"号
 
-        # 向空气中传导的边界条件（当前没有考虑在内）
-        # U_conv_temp_boundary = h * (self.current_T - Ta) / DELTA_Z
-        # Uconv_matrix = U_conv_temp * self.boundary
+        # boundary convention in the first layer
+        Uc_boundary = h * (self.current_T * boundary - Ta) / DELTA_X
 
-        return Uconv_matrix, Uconv_matrix_
+        # boundary convention in the second layer
+        Uc_boundary_ = h * (self.previous_T * self.boundary_ - Ta) / DELTA_X
 
-    def Diffusion(self, P, loc):
+        return Uc_matrix, Uc_matrix_, Uc_boundary, Uc_boundary_
 
-        Uconv_now, Uconv_previous = self.Convention_matrix()
+    def Diffusion(self, P, V, loc):
+
+        Uconv_now, Uconv_previous, Uc_boundary, Uc_boundary_ = self.Convention_matrix(loc)
         Us_now = Uconv_now + self.Heat_matrix(P, loc)
 
+        # first layer
+        X_delta_1 = self.current_T @ (self.T_upper + self.T_lower) - 2 * self.current_T
+        Y_delta_1 = (self.T_left + self.T_right) @ self.current_T - 2 * self.current_T
+        Z_delta_1 = (self.current_T - self.previous_T) * self.current_exist  # test
+        T_next_1 = (-X_delta_1 / DELTA_X ** 2 - Y_delta_1 / DELTA_Y ** 2 - Z_delta_1 / DELTA_Z ** 2
+                    - Uc_boundary / Kt + Uconv_now / Kt) * ALPHA * t * self.Vs + self.current_T  # test
 
-        T_next = [[2 * self.current_T - self.current_T *
+        # second layer  # test
+        X_delta_2 = self.current_T @ (self.T_upper + self.T_lower) - 2 * self.current_T
+        Y_delta_2 = (self.T_left + self.T_right) @ self.current_T - 2 * self.current_T
+        Z_delta_2 = (self.current_T - self.previous_T) * self.current_exist + (self.previous_T - self.body)  # test
+        T_next_2 = (-X_delta_2 / DELTA_X ** 2 - Y_delta_2 / DELTA_Y ** 2 - Z_delta_2 / DELTA_Z ** 2
+                    - Uc_boundary / Kt) * ALPHA * t * self.Vs + self.current_T  # test
 
+        # diffusion to body
+        T_nest_body = (self.previous_T - self.body) / DELTA_Z ** 2  # test
 
-                   ] / DELTA_X ^ 2 + \
-                  [2 * self.current_T - self.current_T * (front + behind)] / DELTA_Y ^ 2 + \
-                  [self.current_T * (1 - down)] + Uconv_now / Kt] * ALPHA * t
+        return T_next_1, T_next_2, T_nest_body
 
+    def Step(self, P, V, loc):
 
+        # heat the product
 
+        # update temperature
+        T_next_1, T_next_2, T_body = self.Diffusion(P, V, loc)
+        self.current_T = T_next_1
+        self.previous_T = T_next_2
+        self.body = T_body
 
-        # second layer
-        T_second = self.previous_T
-
-    def Update_step(self, loc):
-        self.current_exist[loc[0]][loc[1]] = 1
-        # loc = loc # 完善loc的移动
+        # update step
+        self.current_exist[loc[0]][loc[1]] = 1  # remake
 
     def average_T(self):
         # 无法确定average_T的温度，那么应该如何确定变化
