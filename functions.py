@@ -14,7 +14,6 @@ class Thermal():
 
         # in-process location
         self.current_exist = np.zeros((CELL_SIZE, CELL_SIZE))
-        # self.boundary = np.zeros((CELL_SIZE, CELL_SIZE))
         self.boundary_ = np.zeros((CELL_SIZE, CELL_SIZE))
         self.boundary_[0, :] = 1
         self.boundary_[CELL_SIZE - 1, :] = 1
@@ -98,7 +97,6 @@ class Thermal():
         # heat_matrix[self.reaction_radius][self.reaction_radius] = 1
         self.heater_shape = np.array([[0.3, 0.5, 0.3], [0.5, 1, 0.5], [0.3, 0.5, 0.3]])
 
-    # 转化成为矩阵形式，推导一个矩阵形势出来
     def Heat_matrix(self, P, loc):
         Q = 2 * LAMDA * P * exp(-2 * rb ** 2 / Rb ** 2) / (pi * Rb ** 2)
         heat_matrix_temp = np.zeros((CELL_SIZE, CELL_SIZE))
@@ -114,6 +112,7 @@ class Thermal():
         return heat_matrix_
 
     def Convention_matrix(self, loc):
+
         # check boundary
         boundary = self.check_boundary(loc)
 
@@ -133,6 +132,8 @@ class Thermal():
 
         return Uc_matrix, Uc_matrix_, Uc_boundary, Uc_boundary_
 
+    """Problem: 1. V 没有统一 2. loc的位置 3. Body的温度应该如何计算"""
+
     def Diffusion(self, P, V, loc):
 
         Uconv_now, Uconv_previous, Uc_boundary, Uc_boundary_ = self.Convention_matrix(loc)
@@ -143,7 +144,7 @@ class Thermal():
         Y_delta_1 = (self.T_left + self.T_right) @ self.current_T - 2 * self.current_T
         Z_delta_1 = (self.current_T - self.previous_T) * self.current_exist  # test
         T_next_1 = (-X_delta_1 / DELTA_X ** 2 - Y_delta_1 / DELTA_Y ** 2 - Z_delta_1 / DELTA_Z ** 2
-                    - Uc_boundary / Kt + Uconv_now / Kt) * ALPHA * t * self.Vs + self.current_T  # test
+                    - Uc_boundary / Kt + Us_now / Kt) * ALPHA * t * self.Vs + self.current_T  # test
 
         # second layer  # test
         X_delta_2 = self.current_T @ (self.T_upper + self.T_lower) - 2 * self.current_T
@@ -152,27 +153,25 @@ class Thermal():
         T_next_2 = (-X_delta_2 / DELTA_X ** 2 - Y_delta_2 / DELTA_Y ** 2 - Z_delta_2 / DELTA_Z ** 2
                     - Uc_boundary / Kt) * ALPHA * t * self.Vs + self.current_T  # test
 
-        # diffusion to body
-        T_nest_body = (self.previous_T - self.body) / DELTA_Z ** 2  # test
+        # diffuse to body
+        T_nest_body = ((self.previous_T - self.body) / DELTA_Z ** 2 - Uc_boundary_ / Kt) * ALPHA * t * self.Vs
 
         return T_next_1, T_next_2, T_nest_body
 
+    # Track-wise Temperature Update
     def Step(self, P, V, loc):
-
-        # heat the product
-
         # update temperature
         T_next_1, T_next_2, T_body = self.Diffusion(P, V, loc)
-        self.current_T = T_next_1
-        self.previous_T = T_next_2
-        self.body = T_body
+        self.current_T = T_next_1.copy()
+        self.previous_T = T_next_2.copy()
+        self.body = T_body.copy()
 
-        # update step
-        self.current_exist[loc[0]][loc[1]] = 1  # remake
+    # Layer-wise Temperature Update
+    def Update(self):
+        self.body = np.average(self.previous_T.copy())
+        self.previous_T = np.average(self.current_T.copy())
+        self.current_T = np.zeros((CELL_SIZE, CELL_SIZE))
 
-    def average_T(self):
-        # 无法确定average_T的温度，那么应该如何确定变化
-        # 1。 通过实验进行验证，看一下体温度是如何进行上升的，不是不太受温度的影响，需要进行一定的后期标定
-        # 2。 如果不行的话就采用经验常数，通过一个拟合项来表达当前的数值变化，和温度一样，基于经验的标定数量
-        self.body = np.average(self.current_T)
-        return np.average(self.current_T)
+
+
+

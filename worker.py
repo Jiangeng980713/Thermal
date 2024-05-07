@@ -2,8 +2,14 @@ import numpy as np
 import parameter
 from functions import *
 
-path = "stripe"
+
+
 thermal = Thermal()
 
 
 
+for episode in range(len(LAYER_HEIGHT)):
+
+    # start one step
+    for step in range(len(CELL_SIZE * CELL_SIZE)):
+        print('a')
