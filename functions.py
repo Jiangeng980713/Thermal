@@ -7,13 +7,16 @@ class Thermal():
     def __init__(self):
 
         # init matrix
-        self.heat_loc = (0, 0, 0)
+        self.heat_loc = (0, 0)
+        self.Layer_num = 0
         self.previous_T = np.zeros((CELL_SIZE, CELL_SIZE))
         self.current_T = np.zeros((CELL_SIZE, CELL_SIZE))
         self.body = np.zeros((CELL_SIZE, CELL_SIZE))
 
         # in-process location
-        self.current_exist = np.zeros((CELL_SIZE, CELL_SIZE))
+        self.current_exist = np.zeros((CELL_SIZE, CELL_SIZE))  # requires update
+
+        # boundary_ for the finished layers
         self.boundary_ = np.zeros((CELL_SIZE, CELL_SIZE))
         self.boundary_[0, :] = 1
         self.boundary_[CELL_SIZE - 1, :] = 1
@@ -71,12 +74,12 @@ class Thermal():
 
         # in the middle
         if 0 < loc[1] < CELL_SIZE - 1:
-            temp[:, 0] = 1                              # left
-            temp[0, :loc[1] + 1] = 1                    # upper
-            temp[CELL_SIZE - 1, :loc[1] + 1] = 1        # lower
-            temp[:, loc[1]] = 1                         # right
-            temp[loc[0]:, loc[1]] = 0                   # remove right
-            temp[loc[0]:, loc[1] - 1] = 1               # add secondary right
+            temp[:, 0] = 1  # left
+            temp[0, :loc[1] + 1] = 1  # upper
+            temp[CELL_SIZE - 1, :loc[1] + 1] = 1  # lower
+            temp[:, loc[1]] = 1  # right
+            temp[loc[0]:, loc[1]] = 0  # remove right
+            temp[loc[0]:, loc[1] - 1] = 1  # add secondary right
 
         # the left boundary
         if loc[1] == 0:
@@ -84,14 +87,15 @@ class Thermal():
 
         # the right boundary
         if loc[1] == CELL_SIZE - 1:
-            temp[:, 0] = 1                              # left
-            temp[0, :loc[1] + 1] = 1                    # upper
-            temp[CELL_SIZE - 1, :CELL_SIZE - 2] = 1     # down
-            temp[:loc[0], loc[1]] = 1                   # right-1
-            temp[loc[0]:, loc[1]-1] = 1                 # right-2
+            temp[:, 0] = 1  # left
+            temp[0, :loc[1] + 1] = 1  # upper
+            temp[CELL_SIZE - 1, :CELL_SIZE - 2] = 1  # down
+            temp[:loc[0], loc[1]] = 1  # right-1
+            temp[loc[0]:, loc[1] - 1] = 1  # right-2
 
         return temp
 
+    " 采用什么热源进行加热可以有效反应温度"
     def Gaussian_heat(self):
         # heat_matrix = np.zeros((self.reaction_radius*2-1,self.reaction_radius*2-1))
         # heat_matrix[self.reaction_radius][self.reaction_radius] = 1
@@ -133,7 +137,6 @@ class Thermal():
         return Uc_matrix, Uc_matrix_, Uc_boundary, Uc_boundary_
 
     """Problem: 1. V 没有统一 2. loc的位置 3. Body的温度应该如何计算"""
-
     def Diffusion(self, P, V, loc):
 
         Uconv_now, Uconv_previous, Uc_boundary, Uc_boundary_ = self.Convention_matrix(loc)
@@ -143,35 +146,37 @@ class Thermal():
         X_delta_1 = self.current_T @ (self.T_upper + self.T_lower) - 2 * self.current_T
         Y_delta_1 = (self.T_left + self.T_right) @ self.current_T - 2 * self.current_T
         Z_delta_1 = (self.current_T - self.previous_T) * self.current_exist  # test
-        T_next_1 = (-X_delta_1 / DELTA_X ** 2 - Y_delta_1 / DELTA_Y ** 2 - Z_delta_1 / DELTA_Z ** 2
+        T_next_1 = (- X_delta_1 / DELTA_X ** 2 - Y_delta_1 / DELTA_Y ** 2 - Z_delta_1 / DELTA_Z ** 2
                     - Uc_boundary / Kt + Us_now / Kt) * ALPHA * t * self.Vs + self.current_T  # test
 
         # second layer  # test
         X_delta_2 = self.current_T @ (self.T_upper + self.T_lower) - 2 * self.current_T
         Y_delta_2 = (self.T_left + self.T_right) @ self.current_T - 2 * self.current_T
         Z_delta_2 = (self.current_T - self.previous_T) * self.current_exist + (self.previous_T - self.body)  # test
-        T_next_2 = (-X_delta_2 / DELTA_X ** 2 - Y_delta_2 / DELTA_Y ** 2 - Z_delta_2 / DELTA_Z ** 2
+        T_next_2 = (- X_delta_2 / DELTA_X ** 2 - Y_delta_2 / DELTA_Y ** 2 - Z_delta_2 / DELTA_Z ** 2
                     - Uc_boundary / Kt) * ALPHA * t * self.Vs + self.current_T  # test
 
-        # diffuse to body
+        # diffuse to body - third layer
         T_nest_body = ((self.previous_T - self.body) / DELTA_Z ** 2 - Uc_boundary_ / Kt) * ALPHA * t * self.Vs
 
         return T_next_1, T_next_2, T_nest_body
 
     # Track-wise Temperature Update
     def Step(self, P, V, loc):
-        # update temperature
+
+        # Update Temperature
         T_next_1, T_next_2, T_body = self.Diffusion(P, V, loc)
         self.current_T = T_next_1.copy()
         self.previous_T = T_next_2.copy()
         self.body = T_body.copy()
 
+    """ Cost Function 的确定"""
+    def Cost_function(self):
+
+        return 0
+
     # Layer-wise Temperature Update
-    def Update(self):
+    def Episode_Update(self):
         self.body = np.average(self.previous_T.copy())
         self.previous_T = np.average(self.current_T.copy())
         self.current_T = np.zeros((CELL_SIZE, CELL_SIZE))
-
-
-
-
