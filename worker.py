@@ -11,7 +11,7 @@ V = V_total[0]
 
 # one layer
 for episode in range(len(LAYER_HEIGHT)):
-
+    # test
     for step in range(len(CELL_SIZE * CELL_SIZE)):
         # load V
 
