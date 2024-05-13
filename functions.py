@@ -8,10 +8,8 @@ class Thermal():
     def __init__(self):
 
         # init matrix
-        self.heat_loc = (0, 0)
-        self.Layer_num = 0
-        self.previous_T = np.zeros((CELL_SIZE, CELL_SIZE))
         self.current_T = np.zeros((CELL_SIZE, CELL_SIZE))
+        self.previous_T = np.zeros((CELL_SIZE, CELL_SIZE))
         self.body = np.zeros((CELL_SIZE, CELL_SIZE))
 
         # in-process location
@@ -30,7 +28,6 @@ class Thermal():
         self.diffusion_radius = self.rate * self.heater_radius  # d = 3a
         self.heater_shape = np.zeros((self.heater_radius, self.heater_radius))
         self.Gaussian_heat()
-        self.pointer = [0, 0]
 
         """ Diffusion Transaction Matrix """
         # build matrix
@@ -67,7 +64,14 @@ class Thermal():
         self.T_left = (self.A_left - self.B_left) @ self.C_left
 
         # layer-wise velocity
-        self.Vs = 1
+        """ test for determine"""
+        self.Vs = 200
+
+    def reset(self):
+        self.current_T = np.zeros((CELL_SIZE, CELL_SIZE))
+        self.previous_T = np.ones((CELL_SIZE, CELL_SIZE)) * Ta
+        self.body = np.ones((CELL_SIZE, CELL_SIZE)) * Ta
+        self.current_exist = np.zeros((CELL_SIZE, CELL_SIZE))  # requires update
 
     def check_boundary(self, loc):
 
@@ -137,28 +141,47 @@ class Thermal():
 
         return Uc_matrix, Uc_matrix_, Uc_boundary, Uc_boundary_
 
-    """Problem: 1. V 没有统一 2. loc的位置 3. Body的温度应该如何计算"""
+    """Problem: 1. V 没有统一 3. Body的温度应该如何计算"""
     def Diffusion(self, P, V, loc):
 
         Uconv_now, Uconv_previous, Uc_boundary, Uc_boundary_ = self.Convention_matrix(loc)
         Us_now = Uconv_now + self.Heat_matrix(P, loc)
+        Time_rate = V / self.V
 
-        # first layer
-        X_delta_1 = self.current_T @ (self.T_upper + self.T_lower) - 2 * self.current_T
-        Y_delta_1 = (self.T_left + self.T_right) @ self.current_T - 2 * self.current_T
-        Z_delta_1 = (self.current_T - self.previous_T) * self.current_exist  # test
-        T_next_1 = (- X_delta_1 / DELTA_X ** 2 - Y_delta_1 / DELTA_Y ** 2 - Z_delta_1 / DELTA_Z ** 2
-                    - Uc_boundary / Kt + Us_now / Kt) * ALPHA * t * self.Vs + self.current_T  # test
+        # layer number = 1
+        if loc[2]==0:
+            X_delta_1 = self.current_T @ (self.T_upper + self.T_lower) - 2 * self.current_T
+            Y_delta_1 = (self.T_left + self.T_right) @ self.current_T - 2 * self.current_T
+            Z_delta_1 = (self.current_T - self.previous_T) * self.current_exist  # test
+            T_next_1 = (- X_delta_1 / DELTA_X ** 2 - Y_delta_1 / DELTA_Y ** 2 - Z_delta_1 / DELTA_Z ** 2
+                        - Uc_boundary / Kt + Us_now / Kt) * ALPHA * t * self.Vs + self.current_T  # test
 
-        # second layer  # test
-        X_delta_2 = self.current_T @ (self.T_upper + self.T_lower) - 2 * self.current_T
-        Y_delta_2 = (self.T_left + self.T_right) @ self.current_T - 2 * self.current_T
-        Z_delta_2 = (self.current_T - self.previous_T) * self.current_exist + (self.previous_T - self.body)  # test
-        T_next_2 = (- X_delta_2 / DELTA_X ** 2 - Y_delta_2 / DELTA_Y ** 2 - Z_delta_2 / DELTA_Z ** 2
-                    - Uc_boundary / Kt) * ALPHA * t * self.Vs + self.current_T  # test
+            X_delta_2 = self.current_T @ (self.T_upper + self.T_lower) - 2 * self.current_T
+            Y_delta_2 = (self.T_left + self.T_right) @ self.current_T - 2 * self.current_T
+            Z_delta_2 = (self.current_T - self.previous_T) * self.current_exist + (self.previous_T - self.body)  # test
+            T_next_2 = (- X_delta_2 / DELTA_X ** 2 - Y_delta_2 / DELTA_Y ** 2 - Z_delta_2 / DELTA_Z ** 2
+                        - Uc_boundary / Kt) * ALPHA * t * Time_rate + self.current_T  # test
 
-        # diffuse to body - third layer
-        T_nest_body = ((self.previous_T - self.body) / DELTA_Z ** 2 - Uc_boundary_ / Kt) * ALPHA * t * self.Vs
+            T_nest_body = T_next_2
+
+        # layer number higher than 1
+        if loc[2]>=1:
+            # upper layer
+            X_delta_1 = self.current_T @ (self.T_upper + self.T_lower) - 2 * self.current_T
+            Y_delta_1 = (self.T_left + self.T_right) @ self.current_T - 2 * self.current_T
+            Z_delta_1 = (self.current_T - self.previous_T) * self.current_exist  # test
+            T_next_1 = (- X_delta_1 / DELTA_X ** 2 - Y_delta_1 / DELTA_Y ** 2 - Z_delta_1 / DELTA_Z ** 2
+                        - Uc_boundary / Kt + Us_now / Kt) * ALPHA * t * self.Vs + self.current_T  # test
+
+            # second upper layer  # test
+            X_delta_2 = self.current_T @ (self.T_upper + self.T_lower) - 2 * self.current_T
+            Y_delta_2 = (self.T_left + self.T_right) @ self.current_T - 2 * self.current_T
+            Z_delta_2 = (self.current_T - self.previous_T) * self.current_exist + (self.previous_T - self.body)  # test
+            T_next_2 = (- X_delta_2 / DELTA_X ** 2 - Y_delta_2 / DELTA_Y ** 2 - Z_delta_2 / DELTA_Z ** 2
+                        - Uc_boundary / Kt) * ALPHA * t * Time_rate + self.current_T  # test
+
+            # diffuse to body - third upper layer
+            T_nest_body = ((self.previous_T - self.body) / DELTA_Z ** 2 - Uc_boundary_ / Kt) * ALPHA * t * Time_rate
 
         return T_next_1, T_next_2, T_nest_body
 
@@ -171,10 +194,6 @@ class Thermal():
         self.previous_T = T_next_2.copy()
         self.body = T_body.copy()
 
-    """ Cost Function 的确定"""
-    def Cost_function(self):
-
-        return 0
 
     # Layer-wise Temperature Update
     def Episode_Update(self):
