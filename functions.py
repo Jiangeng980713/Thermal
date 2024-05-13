@@ -1,7 +1,6 @@
 from math import *
 import numpy as np
 from parameter import *
-from pandas import pd
 
 
 class Thermal():
@@ -35,17 +34,17 @@ class Thermal():
         self.ones = np.ones((1, CELL_SIZE))
         self.zeros = np.zeros((1, CELL_SIZE))
 
-        # upper transactions matrix # C @ (A-B ) @ T = ^T
+        # upper transactions matrix # C @ (A-B) @ T = ^T  # checked
         self.A_upper = np.vstack((self.diag_matrix, self.zeros))
         self.B_upper = np.vstack((self.zeros, self.diag_matrix))
-        self.B_upper[0][0] = 1  # 测试
+        self.B_upper[0][0] = 1
         self.C_upper = np.hstack((self.diag_matrix, self.zeros.T))
         self.T_upper = self.C_upper @ (self.A_upper - self.B_upper)
 
-        # lower transactions matrix # C @ (A-B ) @ T = ^T
+        # lower transactions matrix # C @ (A-B) @ T = ^T  # checked
         self.A_lower = np.vstack((self.zeros, self.diag_matrix))
         self.B_lower = np.vstack((self.diag_matrix, self.zeros))
-        self.B_lower[CELL_SIZE][CELL_SIZE - 1] = 1  # 测试一下
+        self.B_lower[CELL_SIZE][CELL_SIZE - 1] = 1
         self.C_lower = np.hstack((self.zeros.T, self.diag_matrix))
         self.T_lower = self.C_lower @ (self.A_lower - self.B_lower)
 
@@ -193,7 +192,6 @@ class Thermal():
         self.current_T = T_next_1.copy()
         self.previous_T = T_next_2.copy()
         self.body = T_body.copy()
-
 
     # Layer-wise Temperature Update
     def Episode_Update(self):
