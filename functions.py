@@ -1,6 +1,7 @@
 from math import *
 import numpy as np
 from parameter import *
+from pandas import pd
 
 
 class Thermal():
