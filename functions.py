@@ -145,7 +145,7 @@ class Thermal():
 
         Uconv_now, Uconv_previous, Uc_boundary, Uc_boundary_ = self.Convention_matrix(loc)
         Us_now = Uconv_now + self.Heat_matrix(P, loc)
-        Time_rate = V / self.V
+        Time_rate = V / self.Vs
 
         # layer number = 1
         if loc[2]==0:
