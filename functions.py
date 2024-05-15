@@ -34,37 +34,37 @@ class Thermal():
         self.ones = np.ones((1, CELL_SIZE))
         self.zeros = np.zeros((1, CELL_SIZE))
 
-        # upper transactions matrix # C @ (A-B) @ T = ^T  # checked
+        # upper transactions matrix # C @ (A-B) @ T = ^T   # checked
         self.A_upper = np.vstack((self.diag_matrix, self.zeros))
         self.B_upper = np.vstack((self.zeros, self.diag_matrix))
         self.B_upper[0][0] = 1
         self.C_upper = np.hstack((self.diag_matrix, self.zeros.T))
         self.T_upper = self.C_upper @ (self.A_upper - self.B_upper)
 
-        # lower transactions matrix # C @ (A-B) @ T = ^T  # checked
+        # lower transactions matrix # C @ (A-B) @ T = ^T   # checked
         self.A_lower = np.vstack((self.zeros, self.diag_matrix))
         self.B_lower = np.vstack((self.diag_matrix, self.zeros))
         self.B_lower[CELL_SIZE][CELL_SIZE - 1] = 1
         self.C_lower = np.hstack((self.zeros.T, self.diag_matrix))
         self.T_lower = self.C_lower @ (self.A_lower - self.B_lower)
 
-        # right transactions matrix  # T @ (A-B) @ C = ^T
+        # right transactions matrix  # T @ (A-B) @ C = ^T  # checked
         self.A_right = np.hstack((self.zeros.T, self.diag_matrix))
         self.B_right = np.hstack((self.diag_matrix, self.zeros.T))
-        self.B_right[CELL_SIZE - 1][CELL_SIZE] = 1  # 测试一下
+        self.B_right[CELL_SIZE - 1][CELL_SIZE] = 1
         self.C_right = np.vstack((self.zeros, self.diag_matrix))
         self.T_right = (self.A_right - self.B_right) @ self.C_right
 
-        # left transactions matrix  # T @ (A-B) @ C = ^T
+        # left transactions matrix  # T @ (A-B) @ C = ^T   # checked
         self.A_left = np.hstack((self.diag_matrix, self.zeros.T))
         self.B_left = np.hstack((self.zeros.T, self.diag_matrix))
-        self.B_left[0][0] = 1  # 测试
+        self.B_left[0][0] = 1
         self.C_left = np.vstack((self.diag_matrix, self.zeros))
         self.T_left = (self.A_left - self.B_left) @ self.C_left
 
         # layer-wise velocity
         """ test for determine"""
-        self.Vs = 200
+        self.Vs = VS
 
     def reset(self):
         self.current_T = np.zeros((CELL_SIZE, CELL_SIZE))
@@ -101,10 +101,9 @@ class Thermal():
 
     " 采用什么热源进行加热可以有效反应温度"
     def Gaussian_heat(self):
-        # heat_matrix = np.zeros((self.reaction_radius*2-1,self.reaction_radius*2-1))
-        # heat_matrix[self.reaction_radius][self.reaction_radius] = 1
         self.heater_shape = np.array([[0.3, 0.5, 0.3], [0.5, 1, 0.5], [0.3, 0.5, 0.3]])
 
+    """ 等效热源的加热方式"""
     def Heat_matrix(self, P, loc):
         Q = 2 * LAMDA * P * exp(-2 * rb ** 2 / Rb ** 2) / (pi * Rb ** 2)
         heat_matrix_temp = np.zeros((CELL_SIZE, CELL_SIZE))
@@ -112,6 +111,7 @@ class Thermal():
         for i in range(len(self.heater_shape[0])):
             for j in range(len(self.heater_shape)):
                 temp_x, temp_y = loc[0] - 1, loc[1] - 1
+                # reach boundary skip the value
                 if temp_x < 0 or temp_x > CELL_SIZE or temp_y < 0 or temp_y > CELL_SIZE:
                     continue
                 else:
@@ -148,7 +148,7 @@ class Thermal():
         Time_rate = V / self.Vs
 
         # layer number = 1
-        if loc[2]==0:
+        if loc[2] == 0:
             X_delta_1 = self.current_T @ (self.T_upper + self.T_lower) - 2 * self.current_T
             Y_delta_1 = (self.T_left + self.T_right) @ self.current_T - 2 * self.current_T
             Z_delta_1 = (self.current_T - self.previous_T) * self.current_exist  # test
@@ -164,7 +164,7 @@ class Thermal():
             T_nest_body = T_next_2
 
         # layer number higher than 1
-        if loc[2]>=1:
+        if loc[2] >= 1:
             # upper layer
             X_delta_1 = self.current_T @ (self.T_upper + self.T_lower) - 2 * self.current_T
             Y_delta_1 = (self.T_left + self.T_right) @ self.current_T - 2 * self.current_T
