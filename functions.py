@@ -25,8 +25,8 @@ class Thermal():
         self.rate = 3
         self.heater_radius = 1
         self.diffusion_radius = self.rate * self.heater_radius  # d = 3a
-        # self.heater_shape = np.zeros((self.heater_radius, self.heater_radius))
-        self.heater = self.create_2d_gaussian(10, 10, 1.5)
+        self.row, self.column = 10, 10
+        self.heater = self.create_2d_gaussian(self.row, self.column, std=1.5)
 
         """ Diffusion Transaction Matrix """
         # build matrix
@@ -99,19 +99,16 @@ class Thermal():
 
         return temp
 
-    " 采用什么热源进行加热可以有效反应温度"
-
+    """ Require further discussion"""
     def create_2d_gaussian(self, rows, cols, std):
         x, y = np.meshgrid(np.arange(cols) - (cols - 1) / 2, np.arange(rows) - (rows - 1) / 2)
         gauss_kernel = np.exp(-(x ** 2 + y ** 2) / (2 * std ** 2))
         return gauss_kernel / np.max(gauss_kernel)
 
-    """ 等效热源的加热方式"""
 
     def Heat_matrix(self, P, loc):
         Q = 2 * LAMDA * P * exp(-2 * rb ** 2 / Rb ** 2) / (pi * Rb ** 2)
         heat_matrix_temp = np.zeros((CELL_SIZE, CELL_SIZE))
-        # 等效热源，3x3 加到loc周围的点上，如果 3x3 内没有cell，则认为没有被加热
         for i in range(len(self.heater[0])):
             for j in range(len(self.heater)):
                 temp_x, temp_y = loc[0] - 1, loc[1] - 1
