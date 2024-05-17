@@ -1,24 +1,29 @@
 # simulation length and height
-CELL_SIZE = 100
-LAYER_HEIGHT = 10
-STRIPE_NUM = 10
-SIMU_LENGTH = 5
-SIMU_HEIGHT = 5
+SIMU_L = 0.04
+SIMU_W = 0.02
+SIMU_H = 0.02
 
-# heater parameter
-LAMDA = 1
-rb = 1
-Rb = 1
+# cell number
+CELL_SIZE_X = 200
+CELL_SIZE_Y = 100
+LAYER_HEIGHT = 10  # length of height
+STRIPE_NUM = 10
 
 # cell size
-DELTA_X = SIMU_LENGTH / CELL_SIZE
-DELTA_Y = SIMU_LENGTH / CELL_SIZE
-DELTA_Z = SIMU_HEIGHT / LAYER_HEIGHT
+DELTA_X = SIMU_L / CELL_SIZE_X
+DELTA_Y = SIMU_W / CELL_SIZE_Y
+DELTA_Z = SIMU_H / LAYER_HEIGHT
+
+# heater parameter
+LAMDA = 0.37
+Rb = 0.0015   # 0.0015m
 
 # physical entity
 Ta = 25
-Kt = 1
-h = 25
-ALPHA = 1
-t = 1
-VS = 300  # mm/s
+"""看一下对不对"""
+Kt = 22.5E3       # W/K
+""""""
+h = 25            # W/(m^2 * K)
+ALPHA = 5.632E-6  # m^2/s
+VS = 0.2          # m/s
+t = SIMU_L / (VS * CELL_SIZE_X)   # m/s

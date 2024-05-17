@@ -12,12 +12,6 @@ def create_2d_gaussian(rows, cols, std):
 std = 1.5
 rows, cols = 10, 10
 gauss_matrix = create_2d_gaussian(rows, cols, std)
-print(gauss_matrix)
-
-# 设置图表标题和轴标签
-plt.title('2D Gaussian Distribution')
-plt.xlabel('X axis')
-plt.ylabel('Y axis')
 
 # 显示图表
 plt.show()
