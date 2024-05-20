@@ -2,6 +2,9 @@ from math import *
 import numpy as np
 from parameter import *
 
+import numpy as np
+import matplotlib.pyplot as plt
+
 
 class Thermal():
     def __init__(self):
@@ -21,9 +24,13 @@ class Thermal():
         self.boundary_[:, 0] = 1
         self.boundary_[:, CELL_SIZE_Y - 1] = 1
 
+        """PT"""
         # heater information
-        self.row, self.column = 10, 10
-        self.heater = self.create_2d_gaussian(self.row, self.column, std=1.5)
+        self.row, self.column, std = 15, 15, 2.5
+        self.heater = self.create_2d_gaussian(self.row, self.column, std=std)
+
+        # plt.imshow(self.heater, cmap='hot')
+        # plt.show()
 
         """ Diffusion Transaction Matrix """
         # build matrix
@@ -64,7 +71,7 @@ class Thermal():
         """ test for determine"""
         self.Vs = VS
 
-    def reset(self):
+    def Reset(self):
         self.current_T = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
         self.previous_T = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * Ta
         self.body = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * Ta
@@ -106,19 +113,34 @@ class Thermal():
         gauss_kernel = np.exp(-(x ** 2 + y ** 2) / (2 * std ** 2))
         return gauss_kernel / np.max(gauss_kernel)
 
+    # Transform Heater into Matrix
     def Heat_matrix(self, P, loc):
-        Q = 2 * LAMDA * P * exp(-2 * rb ** 2 / Rb ** 2) / (pi * Rb ** 2)
+        """ PT-Rb"""
+        Q = 2 * LAMDA * P / (pi * Rb ** 2)
+
         heat_matrix_temp = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
         heat_matrix_current = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))  # activate cell
+
+        # the boundary location for heater on the plate
+        boundary_x, boundary_y = loc[0] - self.row // 2, loc[1] - self.column // 2
+        # print('bboudnary', boundary_x, boundary_y )
+
         for i in range(len(self.heater[0])):
             for j in range(len(self.heater)):
-                temp_x, temp_y = loc[0] - 1, loc[1] - 1
+                temp_x, temp_y = boundary_x + i, boundary_y + j
+                # print('temp_x, temp_y', temp_x, temp_y)
                 # outer boundary skip the value
-                if temp_x < 0 or temp_x > CELL_SIZE_X or temp_y < 0 or temp_y > CELL_SIZE_Y:
+                if temp_x < 0 or temp_x >= CELL_SIZE_X or temp_y < 0 or temp_y >= CELL_SIZE_Y:
                     continue
                 else:
                     heat_matrix_temp[temp_x][temp_y] = self.heater[i][j]
                     heat_matrix_current[temp_x][temp_y] = 1  # activate cell
+        print('boudary_y', boundary_y)
+        print('loc',loc)
+        if boundary_y>=0:
+            plt.imshow(heat_matrix_current, cmap='hot')
+            plt.show()
+
         heat_matrix_ = heat_matrix_temp * Q
         return heat_matrix_, heat_matrix_current
 
@@ -154,14 +176,17 @@ class Thermal():
 
         # layer number = 1
         if loc[2] == 0:
-            X_delta_1 = self.current_T @ (self.T_upper + self.T_lower) - 2 * self.current_T
-            Y_delta_1 = (self.T_left + self.T_right) @ self.current_T - 2 * self.current_T
+            X_delta_1 = (self.T_upper + self.T_lower) @ self.current_T - 2 * self.current_T
+            Y_delta_1 = self.current_T @ (self.T_left + self.T_right) - 2 * self.current_T
             Z_delta_1 = (self.current_T - self.previous_T) * self.current_exist  # test
+            # plt.imshow(self.current_exist, cmap='hot')
+            # plt.show()
+
             T_next_1 = (- X_delta_1 / DELTA_X ** 2 - Y_delta_1 / DELTA_Y ** 2 - Z_delta_1 / DELTA_Z ** 2
                         - Uc_boundary / Kt + Us_now / Kt) * ALPHA * t * Time_rate + self.current_T  # test
 
-            X_delta_2 = self.current_T @ (self.T_upper + self.T_lower) - 2 * self.current_T
-            Y_delta_2 = (self.T_left + self.T_right) @ self.current_T - 2 * self.current_T
+            X_delta_2 = (self.T_upper + self.T_lower) @ self.current_T - 2 * self.current_T
+            Y_delta_2 = self.current_T @ (self.T_left + self.T_right) - 2 * self.current_T
             Z_delta_2 = (self.current_T - self.previous_T) * self.current_exist + (self.previous_T - self.body)  # test
             T_next_2 = (- X_delta_2 / DELTA_X ** 2 - Y_delta_2 / DELTA_Y ** 2 - Z_delta_2 / DELTA_Z ** 2
                         - Uc_boundary / Kt) * ALPHA * t * Time_rate + self.current_T  # test
@@ -208,6 +233,7 @@ class Thermal():
 
     # Calculate temperature in 3 stripes
     def Cost_function(self, loc):
+
         current_T = self.current_T * self.current_exist
         if loc[0] >= 3:
             heat_dis = current_T[:, loc[0] - 3 * INTERVAL:loc[0]]
