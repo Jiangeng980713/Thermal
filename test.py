@@ -6,11 +6,12 @@ from optimize import *
 thermal = Thermal()
 # V_total = Optimize()
 
-def Exceute(V_total):
+
+def Execute(V_total):
 
     # init
     heat_loc = [0, 0, 0]  # STEP, STRIPE, LAYER
-    P = 300  # size: CELL_SIZE * LAYER_HEIGHT
+    P = P_Max
     V = V_total[0]
     thermal.reset()
     Cost = 0
@@ -22,29 +23,31 @@ def Exceute(V_total):
         for stripe in range(STRIPE_NUM):
             # one step
             heat_loc[0] = 0
-            for step in range(CELL_SIZE):
+            for step in range(CELL_SIZE_X):
                 # Execute One Step
                 thermal.Step(P, V, heat_loc)
 
-                """ 计算一种 cost function"""
+                # cost function
+                Cost += thermal.Cost_function(heat_loc)
 
                 # Update Location
                 heat_loc[0] += 1
 
                 # one stripe is over
-                if heat_loc[0] == CELL_SIZE:
-                    heat_loc[1] += 1
+                if heat_loc[0] == CELL_SIZE_X:
+                    heat_loc[1] += INTERVAL
                     continue
 
         if heat_loc[1] == STRIPE_NUM:
+            # increase one layer
             heat_loc[2] += 1
             continue
 
         """ test for determine"""
-        P -= 20
+        P -= (P_Max-P_Min)/STRIPE_NUM
 
     return Cost
 
 
-V = VS * np.ones(CELL_SIZE * LAYER_HEIGHT)
-Cost = Exceute(V_total=V)
+V = VS * np.ones(STRIPE_NUM * LAYER_HEIGHT)
+Cost = Execute(V_total=V)

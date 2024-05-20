@@ -8,6 +8,7 @@ CELL_SIZE_X = 200
 CELL_SIZE_Y = 100
 LAYER_HEIGHT = 10  # length of height
 STRIPE_NUM = 10
+INTERVAL = 9
 
 # cell size
 DELTA_X = SIMU_L / CELL_SIZE_X
@@ -17,8 +18,11 @@ DELTA_Z = SIMU_H / LAYER_HEIGHT
 # heater parameter
 LAMDA = 0.37
 Rb = 0.0015   # 0.0015m
+P_Max = 300
+P_Min = 200
 
 # physical entity
+Tm = 600
 Ta = 25
 """看一下对不对"""
 Kt = 22.5E3       # W/K
