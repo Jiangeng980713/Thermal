@@ -12,8 +12,8 @@ STRIPE_NUM = 10
 # initialize location
 INIT_X = 0
 INIT_Y = 4    # 5 in the real world, in matrix 5-1
-INTERVAL_X = 1        # x 的步长
-INTERVAL_Y = 10       # y 的步长
+INTERVAL_X = 1        # distance between step
+INTERVAL_Y = 10       # distance between stripe
 
 # cell size
 DELTA_X = SIMU_L / CELL_SIZE_X
@@ -35,4 +35,4 @@ Kt = 22.5E3       # W/K
 h = 25            # W/(m^2 * K)
 ALPHA = 5.632E-6  # m^2/s
 VS = 0.2          # m/s
-t = SIMU_L / (VS * CELL_SIZE_X)   # m/s
+t = SIMU_L / (VS * CELL_SIZE_X)   # 1E-3 m/s

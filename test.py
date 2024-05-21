@@ -16,7 +16,6 @@ def Execute(V_total):
     thermal.Reset()
     Cost = 0
 
-
     for episode in range(LAYER_HEIGHT):
         # layer begin
         heat_loc[0], heat_loc[1] = INIT_X, INIT_Y
@@ -24,8 +23,10 @@ def Execute(V_total):
             # stripe begin
             heat_loc[0] = 0
             for step in range(CELL_SIZE_X):
+
                 # Execute One Step
                 thermal.Step(P, V, heat_loc)
+                print('stripe, step', stripe, step)
 
                 # cost function
                 Cost += thermal.Cost_function(heat_loc)

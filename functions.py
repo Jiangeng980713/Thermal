@@ -29,9 +29,6 @@ class Thermal():
         self.row, self.column, std = 15, 15, 2.5
         self.heater = self.create_2d_gaussian(self.row, self.column, std=std)
 
-        # plt.imshow(self.heater, cmap='hot')
-        # plt.show()
-
         """ Diffusion Transaction Matrix """
         # build matrix
         self.diag_matrix_X = np.diag(np.ones(CELL_SIZE_X))
@@ -70,6 +67,10 @@ class Thermal():
         # layer-wise velocity
         """ test for determine"""
         self.Vs = VS
+
+    def Display(self, matrix):
+        plt.imshow(matrix)
+        plt.show()
 
     def Reset(self):
         self.current_T = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
@@ -116,7 +117,7 @@ class Thermal():
     # Transform Heater into Matrix
     def Heat_matrix(self, P, loc):
         """ PT-Rb"""
-        Q = 2 * LAMDA * P / (pi * Rb ** 2)
+        Q = 2 * LAMDA * P / (pi * Rb ** 2) * 5000000
 
         heat_matrix_temp = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
         heat_matrix_current = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))  # activate cell
@@ -135,6 +136,7 @@ class Thermal():
                     heat_matrix_current[temp_x][temp_y] = 1  # activate cell
 
         heat_matrix_ = heat_matrix_temp * Q
+        self.Display(heat_matrix_)
         return heat_matrix_, heat_matrix_current
 
     def Convention_matrix(self, loc):
@@ -142,7 +144,7 @@ class Thermal():
         # check boundary
         boundary = self.check_boundary(loc)
 
-        # convention from the first layer
+        # convention to air
         Uc_temp = h * (self.current_T - Ta) / DELTA_Z
         Uc_matrix = - Uc_temp * self.current_exist  # 是否应该有"-"号
 
@@ -163,24 +165,30 @@ class Thermal():
     def Diffusion(self, P, V, loc):
 
         Uconv_now, Uconv_previous, Uc_boundary, Uc_boundary_ = self.Convention_matrix(loc)
+
+        # zeros the convention
+        Uconv_now = Uconv_previous = Uc_boundary = Uc_boundary_ = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
         Heat_matrix, Heat_matrix_current = self.Heat_matrix(P, loc)
+
         Us_now = Uconv_now + Heat_matrix
         Time_rate = V / self.Vs
 
-        # layer number = 1
         if loc[2] == 0:
-            X_delta_1 = (self.T_upper + self.T_lower) @ self.current_T - 2 * self.current_T
-            Y_delta_1 = self.current_T @ (self.T_left + self.T_right) - 2 * self.current_T
 
-            Z_delta_1 = (self.current_T - self.previous_T) * self.current_exist  # test
-            T_next_1 = (- X_delta_1 / DELTA_X ** 2 - Y_delta_1 / DELTA_Y ** 2 - Z_delta_1 / DELTA_Z ** 2
-                        - Uc_boundary / Kt + Us_now / Kt) * ALPHA * t * Time_rate + self.current_T  # test
+            X_delta_1 = ((self.T_upper + self.T_lower) @ self.current_T - 2 * self.current_T) / DELTA_X ** 2
+            Y_delta_1 = (self.current_T @ (self.T_left + self.T_right) - 2 * self.current_T) / DELTA_Y ** 2
+            Z_delta_1 = ((self.current_T - self.previous_T) * self.current_exist) / DELTA_Z ** 2   # test
+            input = Us_now / Kt
+            total = X_delta_1 + Y_delta_1 + Z_delta_1 + Uc_boundary / Kt + input
+            T = total
+            T_next_1 = (X_delta_1 + Y_delta_1 + Z_delta_1 + Uc_boundary / Kt + input) * ALPHA * t + self.current_T
+
+            self.Display(T_next_1)
 
             X_delta_2 = (self.T_upper + self.T_lower) @ self.current_T - 2 * self.current_T
             Y_delta_2 = self.current_T @ (self.T_left + self.T_right) - 2 * self.current_T
             Z_delta_2 = (self.current_T - self.previous_T) * self.current_exist + (self.previous_T - self.body)  # test
-            T_next_2 = (- X_delta_2 / DELTA_X ** 2 - Y_delta_2 / DELTA_Y ** 2 - Z_delta_2 / DELTA_Z ** 2
-                        - Uc_boundary / Kt) * ALPHA * t * Time_rate + self.current_T  # test
+            T_next_2 = (X_delta_2 / DELTA_X ** 2 + Y_delta_2 / DELTA_Y ** 2 + Z_delta_2 / DELTA_Z ** 2 + Uc_boundary / Kt) * ALPHA * t * Time_rate + self.current_T  # test
 
             T_nest_body = T_next_2
 
@@ -216,9 +224,6 @@ class Thermal():
         # update the active cells
         self.current_exist = self.current_exist + Heat_matrix_current
         self.current_exist[self.current_exist != 0] = 1
-        if loc[0] == 193 and loc[1] == 64:
-            plt.imshow(self.current_exist, cmap='hot')
-            plt.show()
 
     # Layer-wise Temperature Update
     def reset(self):
@@ -232,7 +237,7 @@ class Thermal():
 
         current_T = self.current_T * self.current_exist
         if loc[0] >= 3:
-            heat_dis = current_T[:, loc[0] - 3 * INTERVAL:loc[0]]
+            heat_dis = current_T[:, loc[0] - 3 * INTERVAL_Y:loc[0]]
         else:
             heat_dis = current_T[:, :loc[0]]
         Average_T = np.average(self.current_T)
