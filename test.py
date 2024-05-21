@@ -16,12 +16,12 @@ def Execute(V_total):
     thermal.Reset()
     Cost = 0
 
-    # one layer
+
     for episode in range(LAYER_HEIGHT):
-        # one stripe
+        # layer begin
         heat_loc[0], heat_loc[1] = INIT_X, INIT_Y
         for stripe in range(STRIPE_NUM):
-            # one step
+            # stripe begin
             heat_loc[0] = 0
             for step in range(CELL_SIZE_X):
                 # Execute One Step
@@ -34,10 +34,11 @@ def Execute(V_total):
                 heat_loc[0] += 1
 
             # one stripe is done
-            heat_loc[1] += INTERVAL
+            heat_loc[1] += INTERVAL_Y
 
         # one layer is done
         heat_loc[2] += 1
+        thermal.reset()
 
         """ test for determine"""
         P -= (P_Max-P_Min)/STRIPE_NUM

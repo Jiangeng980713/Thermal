@@ -123,23 +123,16 @@ class Thermal():
 
         # the boundary location for heater on the plate
         boundary_x, boundary_y = loc[0] - self.row // 2, loc[1] - self.column // 2
-        # print('bboudnary', boundary_x, boundary_y )
 
         for i in range(len(self.heater[0])):
             for j in range(len(self.heater)):
                 temp_x, temp_y = boundary_x + i, boundary_y + j
-                # print('temp_x, temp_y', temp_x, temp_y)
                 # outer boundary skip the value
                 if temp_x < 0 or temp_x >= CELL_SIZE_X or temp_y < 0 or temp_y >= CELL_SIZE_Y:
                     continue
                 else:
                     heat_matrix_temp[temp_x][temp_y] = self.heater[i][j]
                     heat_matrix_current[temp_x][temp_y] = 1  # activate cell
-        print('boudary_y', boundary_y)
-        print('loc',loc)
-        if boundary_y>=0:
-            plt.imshow(heat_matrix_current, cmap='hot')
-            plt.show()
 
         heat_matrix_ = heat_matrix_temp * Q
         return heat_matrix_, heat_matrix_current
@@ -178,10 +171,8 @@ class Thermal():
         if loc[2] == 0:
             X_delta_1 = (self.T_upper + self.T_lower) @ self.current_T - 2 * self.current_T
             Y_delta_1 = self.current_T @ (self.T_left + self.T_right) - 2 * self.current_T
-            Z_delta_1 = (self.current_T - self.previous_T) * self.current_exist  # test
-            # plt.imshow(self.current_exist, cmap='hot')
-            # plt.show()
 
+            Z_delta_1 = (self.current_T - self.previous_T) * self.current_exist  # test
             T_next_1 = (- X_delta_1 / DELTA_X ** 2 - Y_delta_1 / DELTA_Y ** 2 - Z_delta_1 / DELTA_Z ** 2
                         - Uc_boundary / Kt + Us_now / Kt) * ALPHA * t * Time_rate + self.current_T  # test
 
@@ -221,11 +212,16 @@ class Thermal():
         self.current_T = T_next_1.copy()
         self.previous_T = T_next_2.copy()
         self.body = T_body.copy()
+
         # update the active cells
         self.current_exist = self.current_exist + Heat_matrix_current
+        self.current_exist[self.current_exist != 0] = 1
+        if loc[0] == 193 and loc[1] == 64:
+            plt.imshow(self.current_exist, cmap='hot')
+            plt.show()
 
     # Layer-wise Temperature Update
-    def Episode_Update(self):
+    def reset(self):
         self.body = np.average(self.previous_T.copy())
         """ requires to check - 如何进行迭代"""
         self.previous_T = np.average(self.current_T.copy())

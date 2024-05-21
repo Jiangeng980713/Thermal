@@ -12,7 +12,8 @@ STRIPE_NUM = 10
 # initialize location
 INIT_X = 0
 INIT_Y = 4    # 5 in the real world, in matrix 5-1
-INTERVAL = 10       # 进一步细化
+INTERVAL_X = 1        # x 的步长
+INTERVAL_Y = 10       # y 的步长
 
 # cell size
 DELTA_X = SIMU_L / CELL_SIZE_X
