@@ -4,10 +4,11 @@ SIMU_W = 0.02
 SIMU_H = 0.02
 
 # cell number
-CELL_SIZE_X = 200
-CELL_SIZE_Y = 100
+CELL_SIZE_X = 30
+CELL_SIZE_Y = 30
 LAYER_HEIGHT = 10  # length of height
 STRIPE_NUM = 10
+
 HEATER_ROW, HEATER_COLUMN, HEATER_STD = 3, 3, 1.5
 
 # initialize location
@@ -35,5 +36,5 @@ Kt = 22.5E3       # W/K
 """"""
 h = 25       # W/(m^2 * K)
 ALPHA = 5.632E-6  # m^2/s
-VS = 0.2          # m/s
+VS = 20          # m/s
 t = SIMU_L / (VS * CELL_SIZE_X)   # 1E-3 m/s
