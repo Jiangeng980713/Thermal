@@ -1,5 +1,5 @@
 from math import *
-from parameter_test import *
+from parameter import *
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -22,10 +22,11 @@ class Thermal():
         self.boundary_[:, 0] = 1
         self.boundary_[:, CELL_SIZE_Y - 1] = 1
 
-        """PT"""
+        """ PT """
         # heater information
         self.row, self.column, std = HEATER_ROW, HEATER_COLUMN, HEATER_STD
         self.heater = self.create_2d_gaussian(self.row, self.column, std=std)
+        # self.Display(self.heater)
 
         """ Diffusion Transaction Matrix """
         # build matrix
@@ -74,17 +75,17 @@ class Thermal():
         return 0
 
     "load one temperature distribution from exist situation"
-    def Load(self, load_Temperature, load_Previous, load_body):
-        self.current_T = load_Temperature
-        self.previous_T = load_Previous
-        self.body = load_body
-        self.Actuator = self.transform_heat()
+    # def Load(self, load_Temperature, load_Previous, load_body):
+    #     self.current_T = load_Temperature
+    #     self.previous_T = load_Previous
+    #     self.body = load_body
+    #     self.Actuator = self.transform_heat()
 
     def Reset(self):
         self.current_T = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * Ta
         self.previous_T = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * Ta
         self.body = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * Ta
-        self.Actuator = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))  # requires update
+        self.Actuator = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
 
     """ requires for double check"""
     def Check_boundary(self, loc):
@@ -114,16 +115,16 @@ class Thermal():
 
         return temp
 
-    """ Require further discussion"""
     def create_2d_gaussian(self, rows, cols, std):
         x, y = np.meshgrid(np.arange(cols) - (cols - 1) / 2, np.arange(rows) - (rows - 1) / 2)
         gauss_kernel = np.exp(-(x ** 2 + y ** 2) / (2 * std ** 2))
         return gauss_kernel / np.max(gauss_kernel)
 
-    # Transform Heater into Matrix
+    """ 如何标定热源是当前的一个问题 """
     def Heat_matrix(self, P, loc):
-        """ PT-Rb"""
-        Q = 2 * LAMDA * P / (pi * Rb ** 2) * 5000000
+
+        Q = 2 * LAMDA * P / (pi * Rb ** 2)
+        Q = Q / (SIMU_H / LAYER_HEIGHT)
 
         heat_matrix_temp = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
         heat_matrix_current = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))  # activate cell
@@ -139,48 +140,49 @@ class Thermal():
                     continue
                 else:
                     heat_matrix_temp[temp_x][temp_y] = self.heater[i][j]
-                    # print('heat_matrix_temp', heat_matrix_temp)
                     heat_matrix_current[temp_x][temp_y] = 1  # activate cell
 
         heat_matrix_ = heat_matrix_temp * Q
-        # print('heat_matrix_', heat_matrix_)
         return heat_matrix_, heat_matrix_current
 
-    """Problem: 2. Body的温度应该如何计算（通过实验/仿真进行标定吧）"""
+    """Problem: 1. Body的温度应该如何计算（通过实验/仿真进行标定吧）"""
     def Diffusion(self, P, V, loc):
 
         boundary = self.Check_boundary(loc)
 
-        # convention to air
+        """ # 是否应该有 "-" 号 """
+        # first layer - convention to air
         Uc_temp = h * (self.current_T - Ta) / DELTA_Z
-        Uconv_now = - Uc_temp * self.Actuator  # 是否应该有"-"号
+        Uconv_now = - Uc_temp * self.Actuator
 
-        # convention from the uncovered second layer
+        # second layer - convention from the uncovered
         Uc_temp_ = h * (self.previous_T - Ta) / DELTA_Z
-        Uconv_previous = - Uc_temp_ * (np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * self.Actuator)  # 是否应该有"-"号
+        Uconv_previous = - Uc_temp_ * (np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * self.Actuator)
 
-        # boundary convention in the first layer
-        Uc_boundary = h * (self.current_T * boundary - Ta) / DELTA_X
+        """ 边界条件"""
+        # first layer - boundary convention
+        # Uc_boundary = h * (self.current_T * boundary - Ta) / DELTA_X
 
-        # boundary convention in the second layer
-        Uc_boundary_ = h * (self.previous_T * self.boundary_ - Ta) / DELTA_X
+        # second layer - boundary convention
+        # Uc_boundary_ = h * (self.previous_T * self.boundary_ - Ta) / DELTA_X
 
         """ zeros the boundary matrix"""
-        Uconv_now = Uconv_previous = Uc_boundary = Uc_boundary_ = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
+        Uconv_now = Uc_boundary = Uc_boundary_ = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
 
         Heat_matrix, Heat_matrix_current = self.Heat_matrix(P, loc)
-
-        Us_now = Uconv_now + Heat_matrix
+        Us_now = Heat_matrix + Uconv_now
         Time_rate = V / self.Vs
 
         if loc[2] == 0:
 
             X_delta_1 = ((self.T_upper + self.T_lower) @ self.current_T * self.Actuator) / DELTA_X ** 2
             Y_delta_1 = (self.current_T @ (self.T_left + self.T_right) * self.Actuator) / DELTA_Y ** 2
-            # Z_delta_1 = ((self.current_T - self.previous_T) * self.Actuator) / DELTA_Z ** 2
-            Z_delta_1 = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
+            Z_delta_1 = ((self.current_T - self.previous_T) * self.Actuator) / DELTA_Z ** 2
+
             T_next_1 = (X_delta_1 + Y_delta_1 + Z_delta_1 + Uc_boundary / Kt + Us_now / Kt) * ALPHA * t + self.current_T
-            # self.Display(T_next_1)
+            self.Display(T_next_1)
+            # diffusion_temperature = (X_delta_1 + Y_delta_1 + Z_delta_1 + Uc_boundary / Kt + Us_now / Kt) * ALPHA * t
+            # self.Display(diffusion_temperature)
 
             """ 这个其中的内容和上面相同，完全没有变化"""
             X_delta_2 = (self.T_upper + self.T_lower) @ self.current_T
@@ -191,17 +193,18 @@ class Thermal():
             T_nest_body = T_next_2
 
         # layer number higher than 1
+        """ X-delta-1 和 Y-delta-1 没有加上 actuators """
         if loc[2] >= 1:
             # upper layer
-            X_delta_1 = self.current_T @ (self.T_upper + self.T_lower) - 2 * self.current_T
-            Y_delta_1 = (self.T_left + self.T_right) @ self.current_T - 2 * self.current_T
+            X_delta_1 = self.current_T @ (self.T_upper + self.T_lower)
+            Y_delta_1 = (self.T_left + self.T_right) @ self.current_T
             Z_delta_1 = (self.current_T - self.previous_T) * self.Actuator  # test
             T_next_1 = (- X_delta_1 / DELTA_X ** 2 - Y_delta_1 / DELTA_Y ** 2 - Z_delta_1 / DELTA_Z ** 2
                         - Uc_boundary / Kt + Us_now / Kt) * ALPHA * t * Time_rate + self.current_T  # test
 
             # second upper layer  # test
-            X_delta_2 = self.current_T @ (self.T_upper + self.T_lower) - 2 * self.current_T
-            Y_delta_2 = (self.T_left + self.T_right) @ self.current_T - 2 * self.current_T
+            X_delta_2 = self.current_T @ (self.T_upper + self.T_lower)
+            Y_delta_2 = (self.T_left + self.T_right) @ self.current_T
             Z_delta_2 = (self.current_T - self.previous_T) * self.Actuator + (self.previous_T - self.body)  # test
             T_next_2 = (- X_delta_2 / DELTA_X ** 2 - Y_delta_2 / DELTA_Y ** 2 - Z_delta_2 / DELTA_Z ** 2
                         - Uc_boundary / Kt) * ALPHA * t * Time_rate + self.current_T  # test

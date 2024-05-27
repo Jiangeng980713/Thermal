@@ -4,39 +4,48 @@ from functions import *
 from optimize import *
 
 thermal = Thermal()
-V_total = Optimize()
+# V_total = Optimize()
 
-def Exceute(V_total):
-    # inti
-    heat_loc = [0, 0, 0]
-    P = 300  # size: CELL_SIZE * LAYER_HEIGHT
+
+def Execute(V_total):
+
+    # init
+    heat_loc = [INIT_X, INIT_Y, 0]  # STEP, STRIPE, LAYER
+    P = P_Max
     V = V_total[0]
-    Thermal.reset()
+    thermal.Reset()
     Cost = 0
 
-    # one layer
-    for episode in range(len(LAYER_HEIGHT)):
-        for step in range(len(CELL_SIZE * CELL_SIZE)):
+    for episode in range(LAYER_HEIGHT):
+        # layer begin
+        heat_loc[0], heat_loc[1] = INIT_X, INIT_Y
+        for stripe in range(STRIPE_NUM):
+            # stripe begin
+            heat_loc[0] = 0
+            for step in range(CELL_SIZE_X):
 
-            # One step
-            thermal.Step(P, V, heat_loc)
+                # Execute One Step
+                thermal.Step(P, V, heat_loc)
+                print('stripe, step', stripe, step)
 
-            """ 计算一种 cost function"""
+                # cost function
+                Cost += thermal.Cost_function(heat_loc)
 
-            # Update Location
-            heat_loc[0] += 1
+                # Update Location
+                heat_loc[0] += 1
 
-            # one stripe is over
-            if heat_loc[0] == 9:
-                heat_loc[1] += 1
-                heat_loc[0] = 0
-                V = V_total[episode * CELL_SIZE + step]
+            # one stripe is done
+            heat_loc[1] += INTERVAL_Y
 
         # one layer is done
         heat_loc[2] += 1
+        thermal.reset()
 
         """ test for determine"""
-        P -= 20
-
+        P -= (P_Max-P_Min)/STRIPE_NUM
 
     return Cost
+
+
+V = VS * np.ones(STRIPE_NUM * LAYER_HEIGHT)
+Cost = Execute(V_total=V)

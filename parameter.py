@@ -8,13 +8,14 @@ CELL_SIZE_X = 200
 CELL_SIZE_Y = 100
 LAYER_HEIGHT = 10  # length of height
 STRIPE_NUM = 10
-HEATER_ROW, HEATER_COLUMN, HEATER_STD = 3, 3, 1.5
+
+HEATER_ROW, HEATER_COLUMN, HEATER_STD = 15, 15, 2
 
 # initialize location
 INIT_X = 0
-INIT_Y = 4    # 5 in the real world, in matrix 5-1
-INTERVAL_X = 1        # distance between step
-INTERVAL_Y = 10       # distance between stripe
+INIT_Y = 4  # 5 in the real world, in matrix 5-1
+INTERVAL_X = 1  # distance between step
+INTERVAL_Y = 10  # distance between stripe
 
 # cell size
 DELTA_X = SIMU_L / CELL_SIZE_X
@@ -23,17 +24,16 @@ DELTA_Z = SIMU_H / LAYER_HEIGHT
 
 # heater parameter
 LAMDA = 0.37
-Rb = 0.0015   # 0.0015m
+Rb = 0.0015  # 0.0015m
 P_Max = 300
 P_Min = 200
 
 # physical entity
-Tm = 1000
+Tm = 1600  # melting temperature for 316L
 Ta = 300
-"""看一下对不对"""
-Kt = 22.5E3       # W/K
-""""""
-h = 25       # W/(m^2 * K)
+
+Kt = 22.5  # W/mK
+h = 25  # W/(m^2 * K)
 ALPHA = 5.632E-6  # m^2/s
-VS = 0.2          # m/s
-t = SIMU_L / (VS * CELL_SIZE_X)   # 1E-3 m/s
+VS = 5E-3  # m/s
+t = SIMU_L / (VS * CELL_SIZE_X)  # 4E-2
