@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 thermal = Thermal()
 
-loc = [100,39,0]
+loc = [100, 39, 0]
 P = 300
 V = VS
 x = []

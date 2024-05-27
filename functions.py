@@ -175,16 +175,19 @@ class Thermal():
 
         if loc[2] == 0:
 
-            X_delta_1 = ((self.T_upper + self.T_lower) @ self.current_T * self.Actuator) / DELTA_X ** 2
-            Y_delta_1 = (self.current_T @ (self.T_left + self.T_right) * self.Actuator) / DELTA_Y ** 2
+            X_delta_1 = - ((self.T_upper + self.T_lower) @ self.current_T * self.Actuator) / DELTA_X ** 2
+            Y_delta_1 = - (self.current_T @ (self.T_left + self.T_right) * self.Actuator) / DELTA_Y ** 2
             Z_delta_1 = ((self.current_T - self.previous_T) * self.Actuator) / DELTA_Z ** 2
+            X = - (self.T_upper + self.T_lower) @ self.current_T
+            Y = - self.current_T @ (self.T_left + self.T_right)
+            T = self.current_T
 
             T_next_1 = (X_delta_1 + Y_delta_1 + Z_delta_1 + Uc_boundary / Kt + Us_now / Kt) * ALPHA * t + self.current_T
             self.Display(T_next_1)
             # diffusion_temperature = (X_delta_1 + Y_delta_1 + Z_delta_1 + Uc_boundary / Kt + Us_now / Kt) * ALPHA * t
             # self.Display(diffusion_temperature)
 
-            """ 这个其中的内容和上面相同，完全没有变化"""
+            """ 这个其中的内容和上面相同，完全没有变化 """
             X_delta_2 = (self.T_upper + self.T_lower) @ self.current_T
             Y_delta_2 = self.current_T @ (self.T_left + self.T_right)
             Z_delta_2 = (self.current_T - self.previous_T) * self.Actuator + (self.previous_T - self.body)  # test

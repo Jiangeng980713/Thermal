@@ -11,7 +11,7 @@ STRIPE_NUM = 10
 
 HEATER_ROW, HEATER_COLUMN, HEATER_STD = 15, 15, 2
 
-# initialize location
+# Starter location
 INIT_X = 0
 INIT_Y = 4  # 5 in the real world, in matrix 5-1
 INTERVAL_X = 1  # distance between step
