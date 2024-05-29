@@ -156,11 +156,6 @@ class Thermal():
 
         for i in range(TIME_SCALE):
 
-            "heat the portion"
-            Heat_matrix, Heat_matrix_current = self.Heat_matrix(P, loc)
-            Us_now = Heat_matrix + Uconv_now
-
-            "convention to air"
             # first layer - convention to air
             Uc_temp = h * (self.current_T - Ta) / DELTA_Z
             Uconv_now = - Uc_temp * self.Actuator
@@ -168,6 +163,10 @@ class Thermal():
             # second layer - convention from the uncovered
             Uc_temp_ = h * (self.previous_T - Ta) / DELTA_Z
             Uconv_previous = - Uc_temp_ * (np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * self.Actuator)
+
+            # heater input
+            Heat_matrix, Heat_matrix_current = self.Heat_matrix(P, loc)
+            Us_now = Heat_matrix + Uconv_now
 
             """ 边界条件 """
             boundary = self.Check_boundary(loc)
@@ -181,12 +180,12 @@ class Thermal():
             """ zeros the boundary matrix"""
             Uc_boundary = Uc_boundary_ = 0
 
-            "diffuse the temperatures"
-            # layer number equals to 1
-            if loc[2] == 0:
+            # temperature diffusion
+            if True:  # layer one
                 X_delta_1 = ((self.T_upper + self.T_lower) @ self.current_T * self.Actuator) / DELTA_X ** 2
                 Y_delta_1 = (self.current_T @ (self.T_left + self.T_right) * self.Actuator) / DELTA_Y ** 2
-                Z_delta_1 = ((self.current_T - self.previous_T) * self.Actuator) / DELTA_Z ** 2
+                # Z_delta_1 = ((self.current_T - self.previous_T) * self.Actuator) / DELTA_Z ** 2
+                Z_delta_1 = 0
                 T_next_1 = (X_delta_1 + Y_delta_1 + Z_delta_1 + Uc_boundary / Kt + Us_now / Kt) * ALPHA * (t / TIME_SCALE) + self.current_T
 
                 """ 这个其中的内容和上面相同，完全没有变化 """
@@ -199,38 +198,40 @@ class Thermal():
 
             # layer number higher than 1
             """ X-delta-1 和 Y-delta-1 没有加上 actuators """
-            if loc[2] >= 1:
-                # upper layer
-                X_delta_1 = self.current_T @ (self.T_upper + self.T_lower)
-                Y_delta_1 = (self.T_left + self.T_right) @ self.current_T
-                Z_delta_1 = (self.current_T - self.previous_T) * self.Actuator  # test
-                T_next_1 = (- X_delta_1 / DELTA_X ** 2 - Y_delta_1 / DELTA_Y ** 2 - Z_delta_1 / DELTA_Z ** 2
-                            - Uc_boundary / Kt + Us_now / Kt) * ALPHA * t * Time_rate + self.current_T  # test
+            # if loc[2] >= 1:  # second layer and higher
+            #     # upper layer
+            #     X_delta_1 = self.current_T @ (self.T_upper + self.T_lower)
+            #     Y_delta_1 = (self.T_left + self.T_right) @ self.current_T
+            #     Z_delta_1 = (self.current_T - self.previous_T) * self.Actuator  # test
+            #     T_next_1 = (- X_delta_1 / DELTA_X ** 2 - Y_delta_1 / DELTA_Y ** 2 - Z_delta_1 / DELTA_Z ** 2
+            #                 - Uc_boundary / Kt + Us_now / Kt) * ALPHA * t * Time_rate + self.current_T  # test
+            #
+            #     # second upper layer  # test
+            #     X_delta_2 = self.current_T @ (self.T_upper + self.T_lower)
+            #     Y_delta_2 = (self.T_left + self.T_right) @ self.current_T
+            #     Z_delta_2 = (self.current_T - self.previous_T) * self.Actuator + (self.previous_T - self.body)  # test
+            #     T_next_2 = (- X_delta_2 / DELTA_X ** 2 - Y_delta_2 / DELTA_Y ** 2 - Z_delta_2 / DELTA_Z ** 2
+            #                 - Uc_boundary / Kt) * ALPHA * t * Time_rate + self.current_T  # test
+            #
+            #     # diffuse to body - third upper layer
+            #     T_nest_body = ((self.previous_T - self.body) / DELTA_Z ** 2 - Uc_boundary_ / Kt) * ALPHA * t * Time_rate
 
-                # second upper layer  # test
-                X_delta_2 = self.current_T @ (self.T_upper + self.T_lower)
-                Y_delta_2 = (self.T_left + self.T_right) @ self.current_T
-                Z_delta_2 = (self.current_T - self.previous_T) * self.Actuator + (self.previous_T - self.body)  # test
-                T_next_2 = (- X_delta_2 / DELTA_X ** 2 - Y_delta_2 / DELTA_Y ** 2 - Z_delta_2 / DELTA_Z ** 2
-                            - Uc_boundary / Kt) * ALPHA * t * Time_rate + self.current_T  # test
-
-                # diffuse to body - third upper layer
-                T_nest_body = ((self.previous_T - self.body) / DELTA_Z ** 2 - Uc_boundary_ / Kt) * ALPHA * t * Time_rate
+            # update the temperature in one small cell
+            self.current_T = T_next_1.copy()
+            self.previous_T = T_next_2.copy()
+            self.body = T_nest_body.copy()
 
         return T_next_1, T_next_2, T_nest_body, Heat_matrix_current
 
     # Track-wise Temperature Update
     def Step(self, P, V, loc):
+
         # Update Temperature
         T_next_1, T_next_2, T_body, Heat_matrix_current = self.Diffusion(P, V, loc)
-        self.current_T = T_next_1.copy()
 
         # temp = self.current_T.copy()
         # temp[temp != 0] = 1
         # self.Display(temp)
-
-        self.previous_T = T_next_2.copy()
-        self.body = T_body.copy()
 
         # update the active cells
         self.Actuator = self.Actuator + Heat_matrix_current
@@ -239,8 +240,8 @@ class Thermal():
 
     # Layer-wise Temperature Update
     def reset(self):
+
         self.body = np.average(self.previous_T.copy())
-        """ requires to check - 如何进行迭代"""
         self.previous_T = np.average(self.current_T.copy())
         self.current_T = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
 
@@ -248,10 +249,12 @@ class Thermal():
     def Cost_function(self, loc):
 
         current_T = self.current_T * self.Actuator
+
         if loc[0] >= 3:
             heat_dis = current_T[:, loc[0] - 3 * INTERVAL_Y:loc[0]]
         else:
             heat_dis = current_T[:, :loc[0]]
+
         Average_T = np.average(self.current_T)
         cost = np.sum((heat_dis - Average_T) / Tm ** 2)
 
