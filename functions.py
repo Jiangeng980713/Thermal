@@ -74,6 +74,7 @@ class Thermal():
         return 0
 
     "load one temperature distribution from exist situation"
+
     # def Load(self, load_Temperature, load_Previous, load_body):
     #     self.current_T = load_Temperature
     #     self.previous_T = load_Previous
@@ -87,18 +88,19 @@ class Thermal():
         self.Actuator = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
 
     """ requires for double check"""
+
     def Check_boundary(self, loc):
 
         temp = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
 
         # in the middle
         if 0 < loc[1] < CELL_SIZE_Y - 1:
-            temp[:, 0] = 1                          # left
-            temp[0, :loc[1] + 1] = 1                # upper
+            temp[:, 0] = 1  # left
+            temp[0, :loc[1] + 1] = 1  # upper
             temp[CELL_SIZE_X - 1, :loc[1] + 1] = 1  # lower
-            temp[:, loc[1]] = 1                     # right
-            temp[loc[0]:, loc[1]] = 0               # remove right
-            temp[loc[0]:, loc[1] - 1] = 1           # add secondary right
+            temp[:, loc[1]] = 1  # right
+            temp[loc[0]:, loc[1]] = 0  # remove right
+            temp[loc[0]:, loc[1] - 1] = 1  # add secondary right
 
         # the left boundary
         if loc[1] == 0:
@@ -116,10 +118,11 @@ class Thermal():
 
     def create_2d_gaussian(self, rows, cols):
         x, y = np.meshgrid(np.arange(cols) - (cols - 1) / 2, np.arange(rows) - (rows - 1) / 2)
-        gauss_kernel = np.exp(-2 * (x ** 2 + y ** 2) / ((HEATER_ROW//2) ** 2))
+        gauss_kernel = np.exp(-2 * (x ** 2 + y ** 2) / ((HEATER_ROW // 2) ** 2))
         return gauss_kernel / np.max(gauss_kernel)
 
     """ 如何标定热源是当前的一个问题 """
+
     def Heat_matrix(self, P, loc):
 
         Q = 2 * LAMDA * P / (pi * Rb ** 2)
@@ -146,12 +149,18 @@ class Thermal():
         return heat_matrix_, heat_matrix_current
 
     """Problem: 1. Body的温度应该如何计算（通过实验/仿真进行标定吧）"""
+
     def Diffusion(self, P, V, loc):
 
         Time_rate = V / self.Vs
 
         for i in range(TIME_SCALE):
 
+            "heat the portion"
+            Heat_matrix, Heat_matrix_current = self.Heat_matrix(P, loc)
+            Us_now = Heat_matrix + Uconv_now
+
+            "convention to air"
             # first layer - convention to air
             Uc_temp = h * (self.current_T - Ta) / DELTA_Z
             Uconv_now = - Uc_temp * self.Actuator
@@ -160,7 +169,7 @@ class Thermal():
             Uc_temp_ = h * (self.previous_T - Ta) / DELTA_Z
             Uconv_previous = - Uc_temp_ * (np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * self.Actuator)
 
-            """ 边界条件"""
+            """ 边界条件 """
             boundary = self.Check_boundary(loc)
 
             # first layer - boundary convention
@@ -172,13 +181,9 @@ class Thermal():
             """ zeros the boundary matrix"""
             Uc_boundary = Uc_boundary_ = 0
 
-            # heat the portion
-            Heat_matrix, Heat_matrix_current = self.Heat_matrix(P, loc)
-            Us_now = Heat_matrix + Uconv_now
-
+            "diffuse the temperatures"
             # layer number equals to 1
             if loc[2] == 0:
-
                 X_delta_1 = ((self.T_upper + self.T_lower) @ self.current_T * self.Actuator) / DELTA_X ** 2
                 Y_delta_1 = (self.current_T @ (self.T_left + self.T_right) * self.Actuator) / DELTA_Y ** 2
                 Z_delta_1 = ((self.current_T - self.previous_T) * self.Actuator) / DELTA_Z ** 2
