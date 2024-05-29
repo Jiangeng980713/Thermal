@@ -9,7 +9,9 @@ CELL_SIZE_Y = 100
 LAYER_HEIGHT = 10  # length of height
 STRIPE_NUM = 10
 
-HEATER_ROW, HEATER_COLUMN, HEATER_STD = 15, 15, 2
+# heater parameter
+# HEATER_ROW, HEATER_COLUMN, HEATER_STD = 15, 15, 5
+HEATER_ROW, HEATER_COLUMN = 15, 15
 
 # Starter location
 INIT_X = 0
@@ -36,4 +38,6 @@ Kt = 22.5  # W/mK
 h = 25  # W/(m^2 * K)
 ALPHA = 5.632E-6  # m^2/s
 VS = 5E-3  # m/s
+
 t = SIMU_L / (VS * CELL_SIZE_X)  # 4E-2
+TIME_SCALE = 100
