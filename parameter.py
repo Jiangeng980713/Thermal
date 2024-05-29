@@ -27,8 +27,8 @@ DELTA_Z = SIMU_H / LAYER_HEIGHT
 # heater parameter
 LAMDA = 0.37
 Rb = 0.0015  # 0.0015m
-P_Max = 300
-P_Min = 200
+P_Max = 600
+P_Min = 400
 
 # physical entity
 Tm = 1600  # melting temperature for 316L
