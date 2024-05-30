@@ -40,7 +40,8 @@ time1 = time.time()
 """ 在块体中间进行加热，不涉及 diffusion 的传导"""
 for j in range(cell):
     for i in range(time_):
-        heat_matrix, _ = thermal.Heat_matrix(P, loc)
+
+        heat_matrix = thermal.Heat_matrix(P, loc)
         T = thermal.current_T
 
         # diffuse temperature

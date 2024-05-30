@@ -15,8 +15,8 @@ HEATER_ROW, HEATER_COLUMN = 15, 15
 
 # Starter location
 INIT_X = 0
-INIT_Y = 4  # 5 in the real world, in matrix 5-1
-INTERVAL_X = 1  # distance between step
+INIT_Y = 7       # 5 in the real world, in matrix 5-1
+INTERVAL_X = 1   # distance between step
 INTERVAL_Y = 10  # distance between stripe
 
 # cell size
@@ -25,7 +25,7 @@ DELTA_Y = SIMU_W / CELL_SIZE_Y
 DELTA_Z = SIMU_H / LAYER_HEIGHT
 
 # heater parameter
-LAMDA = 0.37
+LAMDA = 0.5
 Rb = 0.0015  # 0.0015m
 P_Max = 600
 P_Min = 400
@@ -40,4 +40,4 @@ ALPHA = 5.632E-6  # m^2/s
 VS = 5E-3  # m/s
 
 t = SIMU_L / (VS * CELL_SIZE_X)  # 4E-2
-TIME_SCALE = 100
+TIME_SCALE = 75

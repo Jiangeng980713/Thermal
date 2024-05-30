@@ -4,8 +4,6 @@ from functions import *
 from optimize import *
 
 thermal = Thermal()
-
-
 # V_total = Optimize()
 
 
@@ -23,12 +21,17 @@ def Execute(V_total):
         for stripe in range(STRIPE_NUM):
             # stripe begin
             heat_loc[0] = 0
+
             for step in range(CELL_SIZE_X):
 
                 # Execute One Step
                 thermal.Step(P, V, heat_loc)
-                print('stripe, step', stripe, step)
-                thermal.Display(thermal.current_T)
+                # print('stripe, step', stripe, step)
+
+                if step - (step//70)*90 == 0:
+                     print('step', step, step//10)
+                     print('stripe, step', stripe, step)
+                     thermal.Display(thermal.previous_T)
 
                 # Update Location
                 heat_loc[0] += 1
