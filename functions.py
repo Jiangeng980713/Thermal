@@ -149,7 +149,7 @@ class Thermal():
         Time_rate = V / self.Vs
         # time1 = time.time()
 
-        for i in range(TIME_SCALE):
+        for i in range(int(TIME_SCALE * Time_rate)):
 
             # first layer - convention to air
             Uc_temp = h * (self.current_T - Ta) / DELTA_Z

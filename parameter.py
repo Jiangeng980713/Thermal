@@ -37,7 +37,7 @@ Ta = 300
 Kt = 22.5  # W/mK
 h = 25  # W/(m^2 * K)
 ALPHA = 5.632E-6  # m^2/s
-VS = 5E-3  # m/s
+VS = 5E-3  # m/s -> 300 mm/min
 
 t = SIMU_L / (VS * CELL_SIZE_X)  # 4E-2
 TIME_SCALE = 75
