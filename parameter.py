@@ -4,8 +4,8 @@ SIMU_W = 0.02
 SIMU_H = 0.02
 
 # cell number
-CELL_SIZE_X = 200
-CELL_SIZE_Y = 100
+CELL_SIZE_X = 150
+CELL_SIZE_Y = 75
 LAYER_HEIGHT = 10  # length of height
 STRIPE_NUM = 10
 

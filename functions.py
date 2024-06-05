@@ -149,6 +149,7 @@ class Thermal():
         Time_rate = V / self.Vs
         # time1 = time.time()
 
+        """ Time_rate donot cause divergence, TIME_SCALE harm!"""
         for i in range(int(TIME_SCALE * Time_rate)):
 
             # first layer - convention to air
