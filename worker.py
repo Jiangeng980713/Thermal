@@ -1,12 +1,8 @@
-import time
-
-import numpy as np
-import parameter
 from functions import *
-from optimize import *
+import multiprocessing
 
 
-def Execute(V_total):
+def Execute(id, V_total, q):
     thermal = Thermal()
     # init
     heat_loc = [INIT_X, INIT_Y, 0]  # STEP, STRIPE, LAYER
@@ -28,6 +24,7 @@ def Execute(V_total):
                 # Execute One Step
                 thermal.Step(P, V, heat_loc)
                 # print('stripe, step', stripe, step)
+                cost_function = thermal.Cost_function(heat_loc)
 
                 # if step - (step//70)*90 == 0:
                 #      print('step', step, step//10)
@@ -47,8 +44,17 @@ def Execute(V_total):
         """ test for determine"""
         P -= (P_Max - P_Min) / STRIPE_NUM
 
-    return Cost
+    # output the cost_function to the list
+    q.put({id: cost_function})
 
-V = VS * np.ones(STRIPE_NUM * LAYER_HEIGHT)
-Cost = Execute(V_total=V)
+
+if __name__ == '__main__':
+    q = multiprocessing.Queue()
+    V = VS * np.ones(STRIPE_NUM * LAYER_HEIGHT)
+    id = 0
+    p = multiprocessing.Process(target=Execute, args=(id, V, q))
+    p.start()
+    p.join()
+    results = [q.get()]
+    print(results)
 

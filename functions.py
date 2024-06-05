@@ -164,8 +164,8 @@ class Thermal():
             Heat_matrix = self.Heat_matrix(P, loc)
             Us_now = Heat_matrix + Uconv_now
 
-            """ 边界条件 """
-            boundary = self.Check_boundary(loc)
+            """ boundary condition """
+            # boundary = self.Check_boundary(loc)
 
             # first layer - boundary convention
             # Uc_boundary = h * (self.current_T * boundary - Ta) / DELTA_X
@@ -174,13 +174,13 @@ class Thermal():
             # Uc_boundary_ = h * (self.previous_T * self.boundary_ - Ta) / DELTA_X
 
             """ zeros the boundary matrix"""
-            Uc_boundary = Uc_boundary_ = 0
+            # Uc_boundary = Uc_boundary_ = 0
 
             # temperature diffusion - first layer
             X_delta_1 = ((self.T_upper + self.T_lower) @ self.current_T * self.Actuator) / DELTA_X ** 2
             Y_delta_1 = (self.current_T @ (self.T_left + self.T_right) * self.Actuator) / DELTA_Y ** 2
             Z_delta_1 = ((self.previous_T - self.current_T) * self.Actuator) / DELTA_Z ** 2
-            T_next_1 = (X_delta_1 + Y_delta_1 + Z_delta_1 + Uc_boundary / Kt + Us_now / Kt) * ALPHA * (t / TIME_SCALE) + self.current_T
+            T_next_1 = (X_delta_1 + Y_delta_1 + Z_delta_1 + Us_now / Kt) * ALPHA * (t / TIME_SCALE) + self.current_T
 
             # temperature diffusion - second layer
             X_delta_2 = ((self.T_upper + self.T_lower) @ self.previous_T) / DELTA_X ** 2
@@ -209,17 +209,17 @@ class Thermal():
         self.previous_T = np.average(self.current_T.copy())
         self.current_T = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
 
-    # Calculate temperature in 3 stripes
+    " 更新一下目标函数"
     def Cost_function(self, loc):
 
         current_T = self.current_T * self.Actuator
 
-        if loc[0] >= 3:
-            heat_dis = current_T[:, loc[0] - 3 * INTERVAL_Y:loc[0]]
+        if loc[1] >= GRADIENT_LENGTH * INTERVAL_Y:
+            heat_gradient = current_T[:, loc[0] - GRADIENT_LENGTH * INTERVAL_Y:loc[0]]
         else:
-            heat_dis = current_T[:, :loc[0]]
+            heat_gradient = current_T[:, :loc[0]]
 
         Average_T = np.average(self.current_T)
-        cost = np.sum((heat_dis - Average_T) / Tm ** 2)
+        cost = np.sum((heat_gradient - Average_T) / Tm ** 2)
 
         return cost

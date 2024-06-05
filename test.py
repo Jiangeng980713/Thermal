@@ -1,7 +1,6 @@
 import numpy as np
 import parameter
 from functions import *
-from optimize import *
 
 thermal = Thermal()
 # V_total = Optimize()
