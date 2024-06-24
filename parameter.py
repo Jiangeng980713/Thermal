@@ -31,9 +31,9 @@ Rb = 0.0015  # 0.0015m
 P_Max = 600
 P_Min = 300
 
-""" requires further update """
-V_MAX = 10E-3
-V_MIN = 2.5E-3
+# require for further update
+V_MAX = 15E-3   # m/s -> 900 mm/min
+V_MIN = 2.5E-3  # m/s -> 150 mm/min
 
 # physical entity
 Tm = 1600  # melting temperature for 316L
