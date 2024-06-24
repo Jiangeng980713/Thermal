@@ -69,11 +69,14 @@ class Thermal():
         plt.imshow(matrix)
         plt.show()
 
+    # def save_FIG(self, matrix, name):
+    #     plt.imshow(matrix)
+    #     plt.savefig("figure" + name)
+
     def transform_heat(self):
         return 0
 
-    "load one temperature distribution from exist situation"
-
+    # "load one temperature distribution from exist situation"
     # def Load(self, load_Temperature, load_Previous, load_body):
     #     self.current_T = load_Temperature
     #     self.previous_T = load_Previous

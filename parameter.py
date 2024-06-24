@@ -11,7 +11,7 @@ STRIPE_NUM = 10
 
 # heater parameter
 # HEATER_ROW, HEATER_COLUMN, HEATER_STD = 15, 15, 5
-HEATER_ROW, HEATER_COLUMN = 15, 15
+HEATER_ROW, HEATER_COLUMN = 10, 10    # 10 * 0.26um = 2.6 mm
 
 # Starter location
 INIT_X = 0
@@ -29,7 +29,7 @@ DELTA_Z = SIMU_H / LAYER_HEIGHT
 LAMDA = 0.5
 Rb = 0.0015  # 0.0015m
 P_Max = 600
-P_Min = 400
+P_Min = 300
 
 """ requires further update """
 V_MAX = 10E-3
