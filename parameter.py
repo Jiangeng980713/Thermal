@@ -46,3 +46,6 @@ VS = 5E-3  # m/s -> 300 mm/min
 
 t = SIMU_L / (VS * CELL_SIZE_X)  # 4E-2
 TIME_SCALE = 75
+
+# optimizer
+THREAD_NUM = 1
