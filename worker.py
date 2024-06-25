@@ -13,7 +13,7 @@ def Execute(input_vector):
     Cost = 0
     count = 0
 
-    assert len(input_vector) == LAYER_HEIGHT * STRIPE_NUM, " V num do not equal stripe num"
+    assert len(input_vector) == LAYER_HEIGHT * STRIPE_NUM, " V num do not match stripe num"
 
     for layer in range(LAYER_HEIGHT):
 
