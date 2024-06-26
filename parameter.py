@@ -16,7 +16,7 @@ HEATER_ROW, HEATER_COLUMN = 7, 7    # 7 * 0.3mm = 2.1 mm
 INIT_X = 0
 INIT_Y = 3       # 5 in the real world, in matrix 5-1
 INTERVAL_X = 1   # distance between step
-INTERVAL_Y = 13  # distance between stripe
+INTERVAL_Y = 3  # distance between stripe
 
 """ further determination depends on optimization scene """
 GRADIENT_LENGTH = 3   # gradient regions about the optimization

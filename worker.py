@@ -56,5 +56,5 @@ def Execute(input_vector):
     return Cost
 
 if __name__ == "__main__":
-    vector = np.random.uniform(V_MIN, V_MAX, 30)
+    vector = np.random.uniform(V_MIN, V_MAX, 35)
     cost = Execute(vector)

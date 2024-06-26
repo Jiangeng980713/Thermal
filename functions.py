@@ -152,7 +152,9 @@ class Thermal():
         Time_rate = V / self.Vs
         # time1 = time.time()
 
-        """ Time_rate donot cause divergence, TIME_SCALE harm!"""   # 为什么来着了，有点不记得了
+        """ Time_rate donot cause divergence, TIME_SCALE harm!"""
+        # 因为 t / TIME_SCALE 是一种时间划分方式，TIME_RATE是重复多少次传递，并不改变传导等物理过程的时间差分跨度
+        # 相当于 for i 传递差分， for j 重复 i 的循环
         for i in range(int(TIME_SCALE * Time_rate)):
 
             # first layer - convention to air
