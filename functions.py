@@ -152,7 +152,7 @@ class Thermal():
         Time_rate = V / self.Vs
         # time1 = time.time()
 
-        """ Time_rate donot cause divergence, TIME_SCALE harm!"""
+        """ Time_rate donot cause divergence, TIME_SCALE harm!"""   # 为什么来着了，有点不记得了
         for i in range(int(TIME_SCALE * Time_rate)):
 
             # first layer - convention to air
@@ -189,11 +189,11 @@ class Thermal():
             X_delta_2 = ((self.T_upper + self.T_lower) @ self.previous_T) / DELTA_X ** 2
             Y_delta_2 = (self.previous_T @ (self.T_left + self.T_right)) / DELTA_Y ** 2
             Z_delta_2 = ((self.current_T - self.previous_T) * self.Actuator + (self.body - self.previous_T)) / DELTA_Z ** 2
-            T_next_2 = (X_delta_2 + Y_delta_2 + Z_delta_2 + + Uconv_previous / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T
+            T_next_2 = (X_delta_2 + Y_delta_2 + Z_delta_2 + Uconv_previous / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T
 
             # temperature diffusion - body
             """Problem: 1. Body的温度应该如何计算（通过实验/仿真进行标定吧）"""
-            T_nest_body = T_next_2
+            T_nest_body = T_next_2.copy()
 
             # update the temperature in one small cell
             self.current_T = T_next_1.copy()
@@ -201,15 +201,14 @@ class Thermal():
             self.body = T_nest_body.copy()
             self.Actuator = self.Actuator
 
-        time2 = time.time()
+        # time2 = time.time()
 
         return T_next_1, T_next_2, T_nest_body
 
     # Layer-wise Temperature Update
     def reset(self):
-
         self.body = np.average(self.previous_T.copy())
-        self.previous_T = np.average(self.current_T.copy())
+        self.previous_T = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * np.average(self.current_T.copy())
         self.current_T = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
 
     " 更新一下目标函数"
