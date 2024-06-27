@@ -1,13 +1,13 @@
 # simulation length and height
 SIMU_L = 0.03
-SIMU_W = 0.093
-SIMU_H = 0.03
+SIMU_W = 0.0093
+SIMU_H = 0.003        # 0.003m
 LAYER_HEIGHT = 5  # length of height
 STRIPE_NUM = 7
 
 # cell size: 0.3 mm
-CELL_SIZE_X = 100
-CELL_SIZE_Y = 31
+CELL_SIZE_X = 150
+CELL_SIZE_Y = 45
 
 # heater parameter
 HEATER_ROW, HEATER_COLUMN = 7, 7    # 7 * 0.3mm = 2.1 mm
@@ -28,8 +28,8 @@ DELTA_Z = SIMU_H / LAYER_HEIGHT
 
 # heater parameter
 LAMDA = 0.5
-Rb = 0.0015  # 0.0015m
-P_Max = 800
+Rb = 0.001  # 0.0015m
+P_Max = 600
 P_Min = 300
 
 # require for further update

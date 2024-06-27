@@ -2,6 +2,7 @@ from functions import *
 from parameter import *
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 thermal = Thermal()
 
@@ -33,8 +34,6 @@ def check_diffusion(loc):
 
 cell = 100
 time_ = 100
-
-import time
 
 time1 = time.time()
 """ 在块体中间进行加热，不涉及 diffusion 的传导"""

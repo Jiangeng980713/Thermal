@@ -1,5 +1,4 @@
 import numpy as np
-
 from functions import *
 
 
@@ -30,7 +29,7 @@ def Execute(input_vector):
 
                 print('stripe, step', stripe, step)
                 cost_function = thermal.Cost_function(heat_loc)  # determine the cost function
-                thermal.Display(thermal.previous_T)
+                thermal.Display(thermal.current_T)
 
                 # if step - (step//70)*30 == 0:
                 #      # print('step', step, step//10)
