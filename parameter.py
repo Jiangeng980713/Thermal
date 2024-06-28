@@ -1,20 +1,20 @@
 # simulation length and height
 SIMU_L = 0.03
-SIMU_W = 0.0093
+SIMU_W = 0.0092
 SIMU_H = 0.003        # 0.003m
 LAYER_HEIGHT = 5  # length of height
 STRIPE_NUM = 7
 
 # cell size: 0.3 mm
-CELL_SIZE_X = 100
-CELL_SIZE_Y = 31
+CELL_SIZE_X = 150
+CELL_SIZE_Y = 46
 
 # heater parameter
-HEATER_ROW, HEATER_COLUMN = 7, 7    # 7 * 0.3mm = 2.1 mm
+HEATER_ROW, HEATER_COLUMN = 11, 11    # 7 * 0.3mm = 2.1 mm
 
 # Starter location
 INIT_X = 0
-INIT_Y = 3       # 5 in the real world, in matrix 5-1
+INIT_Y = 5       # 5 in the real world, in matrix 5-1
 INTERVAL_X = 1   # distance between step
 INTERVAL_Y = 3  # distance between stripe
 

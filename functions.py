@@ -153,6 +153,7 @@ class Thermal():
         # time1 = time.time()
 
         """ Time_rate donot cause divergence, TIME_SCALE harm!"""
+        # 收敛不收敛看时间跨度，不看迭代多少次
         # 因为 t / TIME_SCALE 是一种时间划分方式，TIME_RATE是重复多少次传递，并不改变传导等物理过程的时间差分跨度
         # 相当于 for i 传递差分， for j 重复 i 的循环
         for i in range(int(TIME_SCALE * Time_rate)):
@@ -184,13 +185,13 @@ class Thermal():
             # temperature diffusion - first layer
             X_delta_1 = ((self.T_upper + self.T_lower) @ self.current_T * self.Actuator) / DELTA_X ** 2
             Y_delta_1 = (self.current_T @ (self.T_left + self.T_right) * self.Actuator) / DELTA_Y ** 2
-            Z_delta_1 = ((self.previous_T - self.current_T) * self.Actuator) / DELTA_Z ** 2
+            Z_delta_1 = ((self.previous_T - self.current_T) * self.Actuator) / (DELTA_Z/2) ** 2
             T_next_1 = (X_delta_1 + Y_delta_1 + Z_delta_1 + Us_now / Kt) * ALPHA * (t / TIME_SCALE) + self.current_T
 
             # temperature diffusion - second layer
             X_delta_2 = ((self.T_upper + self.T_lower) @ self.previous_T) / DELTA_X ** 2
             Y_delta_2 = (self.previous_T @ (self.T_left + self.T_right)) / DELTA_Y ** 2
-            Z_delta_2 = ((self.current_T - self.previous_T) * self.Actuator + (self.body - self.previous_T)) / DELTA_Z ** 2
+            Z_delta_2 = ((self.current_T - self.previous_T) * self.Actuator + (self.body - self.previous_T)) / (DELTA_Z/2) ** 2
             T_next_2 = (X_delta_2 + Y_delta_2 + Z_delta_2 + Uconv_previous / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T
 
             # temperature diffusion - body

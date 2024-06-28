@@ -27,13 +27,11 @@ def Execute(input_vector):
                 # Execute One Step
                 thermal.Step(P, input_vector[count], heat_loc)
 
-                print('stripe, step', stripe, step)
+                # print('stripe, step', stripe, step)
                 cost_function = thermal.Cost_function(heat_loc)  # determine the cost function
-                thermal.Display(thermal.current_T)
+                # thermal.Display(thermal.current_T)
 
                 # if step - (step//70)*30 == 0:
-                #      # print('step', step, step//10)
-                #      # print('stripe, step', stripe, step)
                 #      thermal.Display(thermal.previous_T)
 
                 # Update Location
