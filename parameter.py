@@ -6,7 +6,7 @@ LAYER_HEIGHT = 5  # length of height
 STRIPE_NUM = 7
 
 # cell size: 0.3 mm
-CELL_SIZE_X = 150
+CELL_SIZE_X = 100
 CELL_SIZE_Y = 31
 
 # heater parameter
@@ -28,7 +28,7 @@ DELTA_Z = SIMU_H / LAYER_HEIGHT
 
 # heater parameter
 LAMDA = 0.5
-Rb = 0.0012  # 0.0015m
+Rb = 0.0015  # 0.0015m
 P_Max = 600
 P_Min = 300
 
