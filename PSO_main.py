@@ -9,7 +9,8 @@ class Particle:
         if not load:
             self.position = np.random.uniform(x_bound[0], x_bound[1], dim)   # 生成随机数 Location
         else:
-            self.position = input_vector[particle_id]
+            self.position = input_vector
+            assert len(self.position) == LAYER_HEIGHT * STRIPE_NUM, " V num do not match stripe num " + str(self.id)
         self.velocity = np.random.uniform(v_bound[0], v_bound[1], dim)
         self.best_position = self.position.copy()
         self.best_fitness = float('inf')
@@ -31,6 +32,7 @@ class Particle:
         self.position = np.clip(self.position, self.x_bound[0], self.x_bound[1])
 
 
+# react with the simulator
 def fitness_function(input_vector):
     output_fitness = Execute(input_vector)
     return output_fitness
@@ -42,9 +44,16 @@ def evaluate_particle(particle):
 
 
 def pso(x_bound, v_bound, num_particles, max_iter):
+    RAMDOM_START = True
     load = False
-    input_vector = []
-    dim = 30    # Position 对应的维度，就是优化项目的维度，V 有多少维度
+
+    # 是否是随机生成位置开局，是的话会在 particle 中生成随机 vector
+    if RAMDOM_START:
+        input_vector = [np.random.uniform(V_MIN, V_MAX, LAYER_HEIGHT * STRIPE_NUM)]
+    else:
+        input_vector = [np.random.uniform(V_MIN, V_MAX, LAYER_HEIGHT * STRIPE_NUM)]
+
+    dim = LAYER_HEIGHT * STRIPE_NUM   # Position 对应的维度，就是优化项目的维度，V 有多少维度
     particles = [Particle(i, dim, x_bound, v_bound, load, input_vector) for i in range(num_particles)]
     global_best_position = np.random.uniform(x_bound[0], x_bound[1], dim)
     global_best_fitness = float('inf')
@@ -61,7 +70,7 @@ def pso(x_bound, v_bound, num_particles, max_iter):
     global_costs = []
 
     for episode in range(max_iter):
-
+        print("episode", episode)
         # dynamic w
         w = w_max - (w_max - w_min) * (episode / max_iter)
 
@@ -74,7 +83,6 @@ def pso(x_bound, v_bound, num_particles, max_iter):
 
         current_children = parent_process.children()
         assert len(current_children) == 0, 'children process is not done'
-        # print(f"Current child processes: {len(current_children)}")
 
         for fitness, particle_id in results:
             particle = particles[particle_id]

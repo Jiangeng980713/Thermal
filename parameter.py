@@ -7,10 +7,10 @@ STRIPE_NUM = 7
 
 # cell size: 0.3 mm
 CELL_SIZE_X = 150
-CELL_SIZE_Y = 46
+CELL_SIZE_Y = 46    # 10 + 6 * 6
 
 # heater parameter
-HEATER_ROW, HEATER_COLUMN = 11, 11    # 7 * 0.3mm = 2.1 mm
+HEATER_ROW, HEATER_COLUMN = 11, 11    # 11 * 0.2mm = 2.2 mm
 
 # Starter location
 INIT_X = 0
@@ -49,4 +49,4 @@ t = SIMU_L / (VS * CELL_SIZE_X)  # 4E-2
 TIME_SCALE = 75
 
 # optimizer for PSO
-THREAD_NUM = 1
+THREAD_NUM = 12

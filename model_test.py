@@ -27,12 +27,8 @@ def Execute(input_vector):
                 # Execute One Step
                 thermal.Step(P, input_vector[count], heat_loc)
 
-                # print('stripe, step', stripe, step)
                 cost_function = thermal.Cost_function(heat_loc)  # determine the cost function
                 # thermal.Display(thermal.current_T)
-
-                # if step - (step//70)*30 == 0:
-                #      thermal.Display(thermal.previous_T)
 
                 # Update Location
                 heat_loc[0] += 1
@@ -48,7 +44,7 @@ def Execute(input_vector):
         heat_loc[2] += 1
         thermal.reset()
 
-        """ test for determine"""
+        """ test for determine """
         # 300-800
         P -= (P_Max - P_Min) / STRIPE_NUM
 

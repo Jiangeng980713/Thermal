@@ -76,13 +76,6 @@ class Thermal():
     def transform_heat(self):
         return 0
 
-    # "load one temperature distribution from exist situation"
-    # def Load(self, load_Temperature, load_Previous, load_body):
-    #     self.current_T = load_Temperature
-    #     self.previous_T = load_Previous
-    #     self.body = load_body
-    #     self.Actuator = self.transform_heat()
-
     def Reset(self):
         self.current_T = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * Ta
         self.previous_T = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * Ta
@@ -214,17 +207,16 @@ class Thermal():
         self.previous_T = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * np.average(self.current_T.copy())
         self.current_T = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
 
-    " 更新一下目标函数"
     def Cost_function(self, loc):
 
         current_T = self.current_T * self.Actuator
 
-        if loc[1] >= GRADIENT_LENGTH * INTERVAL_Y:
-            heat_gradient = current_T[:, loc[0] - GRADIENT_LENGTH * INTERVAL_Y:loc[0]]
-        else:
-            heat_gradient = current_T[:, :loc[0]]
+        # if loc[1] >= GRADIENT_LENGTH * INTERVAL_Y:
+        #     heat_gradient = current_T[:, loc[0] - GRADIENT_LENGTH * INTERVAL_Y:loc[0]]
+        # else:
+        #     heat_gradient = current_T[:, :loc[0]]
 
         Average_T = np.average(self.current_T)
-        cost = np.sum((heat_gradient - Average_T) / Tm ** 2)
+        cost = np.sum(((current_T - Average_T) * self.Actuator) / Tm ** 2)
 
         return cost
