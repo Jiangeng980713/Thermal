@@ -2,15 +2,21 @@ import numpy as np
 from functions import *
 
 
-def Execute(input_vector):
+def Execute_calibration(input_vector):
     thermal = Thermal()
+
     # init
     heat_loc = [INIT_X, INIT_Y, 0]  # STEP, STRIPE, LAYER
-    P = P_Max
+
+    # load the real-world temperature
+    real_T = 0
+
+    # solid laser power
+    P = 500
 
     thermal.Reset()
-    Cost = 0
     count = 0
+    mse_count = []
 
     assert len(input_vector) == LAYER_HEIGHT * STRIPE_NUM, " V num do not match stripe num"
 
@@ -26,15 +32,11 @@ def Execute(input_vector):
             for step in range(CELL_SIZE_X):
                 # Execute One Step
                 thermal.Step(P, input_vector[count], heat_loc)
-
-                cost_function = thermal.Cost_function(heat_loc)  # determine the cost function
-                # thermal.Display(thermal.current_T)
+                mse = MSE(thermal.current_T, real_T)
+                mse_count.append(mse)
 
                 # Update Location
                 heat_loc[0] += 1
-
-                # Add cost function
-                Cost += cost_function
 
             # one stripe is done
             heat_loc[1] += INTERVAL_Y  # 加上层间的距离，由道宽以及重叠率决定
@@ -44,16 +46,19 @@ def Execute(input_vector):
         heat_loc[2] += 1
         thermal.reset()
 
-        """ test for determine """
-        # 300-800
-        P -= (P_Max - P_Min) / STRIPE_NUM
+    return mse_count
 
-    return Cost
+
+def MSE(y_true, y_pred):
+    return np.mean((y_true - y_pred) ** 2)
 
 
 if __name__ == "__main__":
-    vector = np.random.uniform(V_MIN, V_MAX, 35)
+    # vector = np.random.uniform(V_MIN, V_MAX, 35)
+    vector = np.full(35, 5E-3)
     time1 = time.time()
-    cost = Execute(vector)
+    mse_count = Execute_calibration(vector)
     time2 = time.time()
     print(time2 - time1)
+    print("MSE_count", mse_count)
+    print("MSE_value", sum(mse_count))
