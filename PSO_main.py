@@ -32,7 +32,7 @@ class Particle:
         self.position = np.clip(self.position, self.x_bound[0], self.x_bound[1])
 
 
-# react with the simulator
+# REACT WITH SIMULATED MODEL -> Execute
 def fitness_function(input_vector):
     output_fitness = Execute(input_vector)
     return output_fitness

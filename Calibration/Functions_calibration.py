@@ -147,7 +147,7 @@ class Thermal():
 
         """ Time_rate donot cause divergence, TIME_SCALE harm!"""
         # 收敛不收敛看时间跨度，不看迭代多少次
-        # 因为 t / TIME_SCALE 是一种时间划分方式，TIME_RATE是重复多少次传递，并不改变传导等物理过程的时间差分跨度
+        # 因为 t / TIME_SCALE 是一种时间划分方式，TIME_RATE 是重复多少次传递，并不改变传导等物理过程的时间差分跨度
         # 相当于 for i 传递差分， for j 重复 i 的循环
         for i in range(int(TIME_SCALE * Time_rate)):
 

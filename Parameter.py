@@ -5,7 +5,7 @@ SIMU_H = 0.003        # 0.003m
 LAYER_HEIGHT = 5  # length of height
 STRIPE_NUM = 7
 
-# cell size: 0.3 mm
+# cell size 0.2mm / cell
 CELL_SIZE_X = 150
 CELL_SIZE_Y = 46    # 10 + 6 * 6
 
@@ -33,7 +33,7 @@ P_Max = 600
 P_Min = 300
 
 # require for further update
-V_MAX = 15E-3   # m/s -> 900 mm/min
+V_MAX = 10E-3   # m/s -> 600 mm/min
 V_MIN = 2.5E-3  # m/s -> 150 mm/min
 
 # physical entity
@@ -46,7 +46,7 @@ ALPHA = 5.632E-6  # m^2/s
 VS = 5E-3  # m/s -> 300 mm/min
 
 t = SIMU_L / (VS * CELL_SIZE_X)  # 4E-2
-TIME_SCALE = 75
+TIME_SCALE = 75    # 30+ is converged
 
 # optimizer for PSO
 THREAD_NUM = 12

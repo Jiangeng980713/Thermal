@@ -1,15 +1,11 @@
-import numpy as np
-from functions import *
+from Functions_calibration import *
 
 
-def Execute_calibration(input_vector):
+def Execute_calibration(input_vector, real_T):
     thermal = Thermal()
 
     # init
     heat_loc = [INIT_X, INIT_Y, 0]  # STEP, STRIPE, LAYER
-
-    # load the real-world temperature
-    real_T = 0
 
     # solid laser power
     P = 500
@@ -35,6 +31,11 @@ def Execute_calibration(input_vector):
                 mse = MSE(thermal.current_T, real_T)
                 mse_count.append(mse)
 
+                if step - (step//70)*90 == 0:
+                     print('step', step, step//10)
+                     print('stripe, step', stripe, step)
+                     thermal.Display(thermal.current_T)
+
                 # Update Location
                 heat_loc[0] += 1
 
@@ -57,7 +58,8 @@ if __name__ == "__main__":
     # vector = np.random.uniform(V_MIN, V_MAX, 35)
     vector = np.full(35, 5E-3)
     time1 = time.time()
-    mse_count = Execute_calibration(vector)
+    real_T = 0
+    mse_count = Execute_calibration(vector, real_T)
     time2 = time.time()
     print(time2 - time1)
     print("MSE_count", mse_count)
