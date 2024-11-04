@@ -40,36 +40,31 @@ def apply_perspective_transform(image, src_points, dst_size):
     return gray_image
 
 
-if __name__ == "__main__":
+# 示例使用
+image = cv2.imread('Figure_1.png')  # 读取图像
 
-    # 示例使用
-    image = cv2.imread('Figure_1.png')  # 读取图像
+Display(image)
 
-    Display(image)
+# 原始图像中待变换的四个点（例如，某个矩形区域的四个角）
+src_points = np.float32([
+    [330, 84],  # 左上角
+    [420, 91],  # 右上角
+    [404, 159],  # 右下角
+    [312, 152]  # 左下角
+])
 
-    # 原始图像中待变换的四个点（例如，某个矩形区域的四个角）
-    src_points = np.float32([
-        [330, 84],  # 左上角
-        [420, 91],  # 右上角
-        [404, 159],  # 右下角
-        [312, 152]  # 左下角
-    ])
+# 目标图像大小 (宽度, 高度)，也就是俯视图的分辨率，改大小就是实现自适应池化的过程
+dst_size = (1600, 1600)
+time1 = time.time()
 
-    # 目标图像大小 (宽度, 高度)，也就是俯视图的分辨率，改大小就是实现自适应池化的过程
-    dst_size = (1600, 1600)
-    time1 = time.time()
+# 进行透视变换并转换为灰度图
+result_image = apply_perspective_transform(image, src_points, dst_size)
+time2 = time.time()
 
-    # 进行透视变换并转换为灰度图
-    result_image = apply_perspective_transform(image, src_points, dst_size)
-    time2 = time.time()
+# 在线显示灰度图像
+cv2.imshow('Transformed Gray Image', result_image)
+# print(time2 - time1)
 
-    # 在线显示灰度图像
-    cv2.imshow('Transformed Gray Image', result_image)
-    # print(time2 - time1)
-
-    # 按任意键关闭窗口
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-
-
+# 按任意键关闭窗口
+cv2.waitKey(0)
+cv2.destroyAllWindows()

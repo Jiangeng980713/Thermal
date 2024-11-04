@@ -18,9 +18,6 @@ INIT_Y = 5       # 5 in the real world, in matrix 5-1
 INTERVAL_X = 1   # distance between step
 INTERVAL_Y = 3  # distance between stripe
 
-# """ further determination depends on optimization scene """
-# GRADIENT_LENGTH = 3   # gradient regions about the optimization
-
 # cell size
 DELTA_X = SIMU_L / CELL_SIZE_X
 DELTA_Y = SIMU_W / CELL_SIZE_Y
@@ -43,7 +40,7 @@ Ta = 300
 Kt = 22.5  # W/mK
 h = 25  # W/(m^2 * K)
 ALPHA = 5.632E-6  # m^2/s
-VS = 5E-3  # m/s -> 300 mm/min
+VS = 5E-3  # m/s -> 300 mm/min   # the real physical experiment is about 250mm/min
 
 t = SIMU_L / (VS * CELL_SIZE_X)  # 4E-2
 TIME_SCALE = 75    # 30+ is converged

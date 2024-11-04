@@ -1,6 +1,6 @@
 import time
 from math import *
-from Parameter import *
+from Parameter_calibration import *
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -140,7 +140,7 @@ class Thermal():
         self.Actuator[self.Actuator != 0] = 1
         return heat_matrix_
 
-    def Step(self, P, V, loc):
+    def Step(self, P, V, loc, DISPLAY_COUNT):
 
         Time_rate = V / self.Vs
         # time1 = time.time()

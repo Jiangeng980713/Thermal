@@ -26,8 +26,12 @@ def Execute_calibration(input_vector, real_T):
             heat_loc[0] = 0
 
             for step in range(CELL_SIZE_X):
+
+                # calculate the global step number
+                global_count = layer * STRIPE_NUM * CELL_SIZE_X + stripe * CELL_SIZE_X + step
+
                 # Execute One Step
-                thermal.Step(P, input_vector[count], heat_loc)
+                thermal.Step(P, input_vector[count], heat_loc, DISPLAY_COUNT)
                 mse = MSE(thermal.current_T, real_T)
                 mse_count.append(mse)
 
