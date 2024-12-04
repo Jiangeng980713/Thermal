@@ -1,6 +1,6 @@
 import time
 from math import *
-from Parameter_calibration import *
+from Parameter import *
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -69,9 +69,9 @@ class Thermal():
         plt.imshow(matrix)
         plt.show()
 
-    # def save_FIG(self, matrix, name):
-    #     plt.imshow(matrix)
-    #     plt.savefig("figure" + name)
+    def save_FIG(self, matrix, name):
+        plt.imshow(matrix)
+        plt.savefig("figure" + name)
 
     def transform_heat(self):
         return 0
@@ -140,12 +140,11 @@ class Thermal():
         self.Actuator[self.Actuator != 0] = 1
         return heat_matrix_
 
-    def Step(self, P, V, loc, DISPLAY_COUNT):
+    def Step(self, P, V, loc):
 
         Time_rate = V / self.Vs
-        # time1 = time.time()
 
-        """ Time_rate donot cause divergence, TIME_SCALE harm!"""
+        """ Time_rate don't cause divergence, TIME_SCALE harm!"""
         # 收敛不收敛看时间跨度，不看迭代多少次
         # 因为 t / TIME_SCALE 是一种时间划分方式，TIME_RATE 是重复多少次传递，并不改变传导等物理过程的时间差分跨度
         # 相当于 for i 传递差分， for j 重复 i 的循环
@@ -197,9 +196,7 @@ class Thermal():
             self.body = T_nest_body.copy()
             self.Actuator = self.Actuator
 
-        # time2 = time.time()
-
-        return T_next_1, T_next_2, T_nest_body
+        # return T_next_1, T_next_2, T_nest_body
 
     # Layer-wise Temperature Update
     def reset(self):

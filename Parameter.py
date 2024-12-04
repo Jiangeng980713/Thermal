@@ -16,9 +16,9 @@ HEATER_ROW, HEATER_COLUMN = 11, 11    # 11 * 0.2mm = 2.2 mm
 INIT_X = 0
 INIT_Y = 5       # 5 in the real world, in matrix 5-1
 INTERVAL_X = 1   # distance between step
-INTERVAL_Y = 3  # distance between stripe
+INTERVAL_Y = 3   # distance between stripe
 
-# """ further determination depends on optimization scene """
+""" further determination depends on optimization scene """
 # GRADIENT_LENGTH = 3   # gradient regions about the optimization
 
 # cell size
@@ -28,7 +28,7 @@ DELTA_Z = SIMU_H / LAYER_HEIGHT
 
 # heater parameter
 LAMDA = 0.5
-Rb = 0.0012  # Rb越小，温度越高
+Rb = 0.0012  # Rb 越小，温度越高
 P_Max = 600
 P_Min = 300
 
