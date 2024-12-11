@@ -1,7 +1,7 @@
 # simulation length and height
 SIMU_L = 0.03
 SIMU_W = 0.0092
-SIMU_H = 0.003        # 0.003m
+SIMU_H = 0.005
 LAYER_HEIGHT = 5  # length of height
 STRIPE_NUM = 7
 
@@ -32,9 +32,13 @@ Rb = 0.0012  # Rb 越小，温度越高
 P_Max = 600
 P_Min = 300
 
+# time between the heater actuated
+TIME_SLEEP = 20
+SLEEP_SPEED = 2.5E-3
+
 # require for further update
-V_MAX = 10E-3   # m/s -> 600 mm/min -> 10mm/s -> 20ms (0.2mm per cell)
-V_MIN = 2.5E-3  # m/s -> 150 mm/min -> 2.5mm/s -> 80ms (0.2mm per cell)
+V_MAX = 10E-3   # m/s -> 600 mm/min -> 10mm/s -> 20ms (0.2mm per cell) -> 50 fps
+V_MIN = 2.5E-3  # m/s -> 150 mm/min -> 2.5mm/s -> 80ms (0.2mm per cell) -> 12.5 fps
 
 # physical entity
 Tm = 2150  # melting temperature for 316L
@@ -45,6 +49,7 @@ h = 25  # W/(m^2 * K)
 ALPHA = 5.632E-6  # m^2/s
 VS = 5E-3  # m/s -> 300 mm/min
 
+# coverage speed
 t = SIMU_L / (VS * CELL_SIZE_X)  # 4E-2
 TIME_SCALE = 75    # 30+ is converged
 

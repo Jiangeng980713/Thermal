@@ -140,7 +140,7 @@ class Thermal():
         self.Actuator[self.Actuator != 0] = 1
         return heat_matrix_
 
-    def Step(self, P, V, loc):
+    def Step(self, P, V, loc, heater_actuated):
 
         Time_rate = V / self.Vs
 
@@ -158,9 +158,12 @@ class Thermal():
             Uc_temp_ = h * (self.previous_T - Ta) / DELTA_Z
             Uconv_previous = - Uc_temp_ * (np.ones((CELL_SIZE_X, CELL_SIZE_Y)) - self.Actuator)
 
-            # heater input
-            Heat_matrix = self.Heat_matrix(P, loc)
-            Us_now = Heat_matrix + Uconv_now
+            # heater is actuated or wait for the heater transform into next layer
+            if heater_actuated:
+                Heat_matrix = self.Heat_matrix(P, loc)
+                Us_now = Heat_matrix + Uconv_now
+            else:
+                Us_now = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
 
             """ boundary condition """
             # boundary = self.Check_boundary(loc)
@@ -187,7 +190,7 @@ class Thermal():
             T_next_2 = (X_delta_2 + Y_delta_2 + Z_delta_2 + Uconv_previous / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T
 
             # temperature diffusion - body
-            """Problem: 1. Body的温度应该如何计算（通过实验/仿真进行标定吧）"""
+            """Problem: 1. Body 的温度应该如何计算（通过实验 / 仿真进行标定）"""
             T_nest_body = T_next_2.copy()
 
             # update the temperature in one small cell
@@ -196,24 +199,8 @@ class Thermal():
             self.body = T_nest_body.copy()
             self.Actuator = self.Actuator
 
-        # return T_next_1, T_next_2, T_nest_body
-
     # Layer-wise Temperature Update
     def reset(self):
         self.body = np.average(self.previous_T.copy())
         self.previous_T = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * np.average(self.current_T.copy())
         self.current_T = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
-
-    def Cost_function(self, loc):
-
-        current_T = self.current_T * self.Actuator
-
-        # if loc[1] >= GRADIENT_LENGTH * INTERVAL_Y:
-        #     heat_gradient = current_T[:, loc[0] - GRADIENT_LENGTH * INTERVAL_Y:loc[0]]
-        # else:
-        #     heat_gradient = current_T[:, :loc[0]]
-
-        Average_T = np.average(self.current_T)
-        cost = np.sum(((current_T - Average_T) * self.Actuator) / Tm ** 2)
-
-        return cost

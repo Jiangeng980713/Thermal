@@ -2,9 +2,7 @@ from Functions_calibration import *
 from Data_Treatment import *
 
 
-"remained work: 1. 加入时间戳  2. 构建MSE误差"
-
-def Commingle(input_vector, input_figures):
+def simulation(input_vector):
 
     thermal = Thermal()
 
@@ -16,10 +14,8 @@ def Commingle(input_vector, input_figures):
 
     thermal.Reset()
     count = 0
-    mse_count = []
-
-    # load and treat input figures
-    real_figures = load_all_figures(input_figures)
+    T_first_layer_count = []
+    T_full_layer_count = []
 
     assert len(input_vector) == LAYER_HEIGHT * STRIPE_NUM, " V num do not match stripe num "
 
@@ -32,25 +28,40 @@ def Commingle(input_vector, input_figures):
             # stripe begin
             heat_loc[0] = 0
 
+            # heater is working
             for step in range(CELL_SIZE_X):
 
-                # calculate the global step number
-                global_count = layer * STRIPE_NUM * CELL_SIZE_X + stripe * CELL_SIZE_X + step
+                # # calculate the global step number
+                # global_count = layer * STRIPE_NUM * CELL_SIZE_X + stripe * CELL_SIZE_X + step
 
                 # Execute One Step
-                thermal.Step(P, input_vector[count], heat_loc)
+                thermal.Step(P, input_vector[count], heat_loc, True)
 
                 # calculate the thermal distribution
-                current_T = thermal.current_T
-                real_T = real_T * thermal.Actuator
+                real_T = thermal.current_T * thermal.Actuator
+                concat_T = thermal.previous_T * (1 - thermal.Actuator)
 
-                if step - (step//70)*90 == 0:
-                     print('step', step, step//10)
-                     print('stripe, step', stripe, step)
-                     thermal.Display(thermal.current_T)
+                # if step - (step//70)*90 == 0:
+                #      print('step', step, step//10)
+                #      print('stripe, step', stripe, step)
+                #      thermal.Display(thermal.current_T)
 
                 # Update Location
                 heat_loc[0] += 1
+
+                # record the temperature distribution
+                T_first_layer_count.append(real_T)
+                T_full_layer_count.append(concat_T)
+
+            # add the sleep time and wait for heater moving
+            for step in range(TIME_SLEEP):
+                thermal.Step(P, SLEEP_SPEED, heat_loc, False)
+
+                real_T = thermal.current_T * thermal.Actuator
+                concat_T = thermal.previous_T * (1- thermal.Actuator)
+
+                T_first_layer_count.append(real_T)
+                T_full_layer_count.append(concat_T)
 
             # one stripe is done
             heat_loc[1] += INTERVAL_Y  # 加上层间的距离，由道宽以及重叠率决定
@@ -60,73 +71,41 @@ def Commingle(input_vector, input_figures):
         heat_loc[2] += 1
         thermal.reset()
 
-    return mse_count
+    return T_first_layer_count, T_full_layer_count
 
 
-def nearest_neighbor_match_varying_duration(fps_19, fps_30, duration_19, duration_30):
+def MSE(simu, real):
 
-    """
-    以较短的 19 FPS 或 30 FPS 视频持续时间为基准，进行最近邻匹配。
+    # assert length of the simulation equal
+    assert len(simu) == len(real), "The lengths of 'simu' and 'real' do not match."
 
-    参数:
-    - fps_19: 19 FPS 视频的帧率
-    - fps_30: 30 FPS 视频的帧率
-    - duration_19: 19 FPS 视频的总时长（秒）
-    - duration_30: 30 FPS 视频的总时长（秒）
+    mses = []
 
-    返回:
-    - matches: 一个列表，表示在短视频时间范围内，19 FPS 视频每帧对应的 30 FPS 视频的帧编号
-    """
+    for i in range(len(simu)):
+        mse = mean_squared_rate(simu[i], real[i])
+        mses.append(mse)
 
-    # 获取两个视频的较短持续时间
-    min_duration = min(duration_19, duration_30)
-
-    # 计算在较短时间范围内的两个视频的时间戳
-    timestamps_19 = np.arange(0, min_duration, 1 / fps_19)
-    timestamps_30 = np.arange(0, min_duration, 1 / fps_30)
-
-    # 用于保存 19 FPS 视频中每帧对应的最近的 30 FPS 帧编号
-    matches = []
-
-    # 找到 30 FPS 视频中时间最接近当前 19 FPS 时间戳的帧索引
-    for t in timestamps_19:
-        closest_index = np.argmin(np.abs(timestamps_30 - t))
-        matches.append(closest_index)
-
-    return matches
+    return mses
 
 
-
-def mse(y1, y2):
-    return np.mean((y1 - y2) ** 2)
+# 均方误差比率
+def mean_squared_rate(x_pred, x_real):
+    epsilon = 1e-8
+    error_rate_matrix = np.abs(x_pred - x_real) / (np.abs(x_real) + epsilon) * 100
+    mean_error_rate = np.mean(error_rate_matrix)
+    return mean_error_rate
 
 
 if __name__ == "__main__":
 
     # find the path
     path = 'xxxxxxx'
-    name = "constant"
-    fps_exp = 20
+    real_data = calibration(path)
 
-    # load the figures
-    input_figures = load_all_figures(path)
+    # simulated surrogate model
     input_vector = np.full(35, 5e-3)
+    simu_data_half, simu_data_full = simulation(input_vector)
 
-    # 示例用法
-    V_in_exp = 200  # 200 mm/min
-
-    fps_19 = 19
-    fps_30 = 30
-
-    # real time from the
-    duration_R = len(input_figures) / fps_exp
-
-    # stripe Length * stripe count * layer count * 1000 （mm->m）* 60 (min->s) / V (G code)
-    duration_C = STRIPE_NUM * LAYER_HEIGHT * SIMU_L * 1000 * 60 / V_in_exp
-
-    # print("在较短持续时间内 19 FPS 视频的帧对应的 30 FPS 视频的最近帧索引:", matched_frames)
-    matched_frames = nearest_neighbor_match_varying_duration(fps_19, fps_30, duration_R, duration_C)
-
-    # calculate the mse
-    mse_total = Commingle(input_vector, input_figures)
-    np.save('mse_total' + name, mse_total)
+    # calculate error sequence
+    mse_sequence = MSE(simu_data_full, real_data)
+    np.save("mse", mse_sequence)
