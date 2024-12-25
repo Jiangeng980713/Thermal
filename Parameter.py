@@ -6,7 +6,7 @@ LAYER_HEIGHT = 5  # length of height
 STRIPE_NUM = 7
 
 # cell size 0.2mm / cell
-CELL_SIZE_X = 150
+CELL_SIZE_X = 175
 CELL_SIZE_Y = 46    # 10 + 6 * 6
 
 # heater parameter
@@ -34,7 +34,6 @@ P_Min = 300
 
 # time between the heater actuated
 TIME_SLEEP = 20
-SLEEP_SPEED = 2.5E-3
 
 # require for further update
 V_MAX = 10E-3   # m/s -> 600 mm/min -> 10mm/s -> 20ms (0.2mm per cell) -> 50 fps
