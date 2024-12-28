@@ -2,19 +2,22 @@ from Functions_calibration import *
 from Data_Treatment import *
 
 
-def simulation(input_vector):
+def commingle(input_vector):
 
     thermal = Thermal()
+    V0 = VS  # solid input speed -> constant speed for calibration (240mm/min, 360mm/min, 480mm/min)
 
     # init
     heat_loc = [INIT_X, INIT_Y, 0]  # STEP, STRIPE, LAYER
 
     # solid laser power
     P = 500
-
+    global_count = 0
     thermal.Reset()
     count = 0
-    T_first_layer_count = []
+
+    # first layer include the upper layer, full layer include upper layer and the second layer
+    T_first_layers = []
     T_full_layer_count = []
 
     assert len(input_vector) == LAYER_HEIGHT * STRIPE_NUM, " V num do not match stripe num "
@@ -31,37 +34,33 @@ def simulation(input_vector):
             # heater is working
             for step in range(CELL_SIZE_X):
 
-                # # calculate the global step number
-                # global_count = layer * STRIPE_NUM * CELL_SIZE_X + stripe * CELL_SIZE_X + step
+                # calculate the global step number
+                global_count += 1
 
                 # Execute One Step
-                thermal.Step(P, input_vector[count], heat_loc, True)
+                thermal.Step(P, V0, heat_loc, True)
 
                 # calculate the thermal distribution
                 real_T = thermal.current_T * thermal.Actuator
-                concat_T = thermal.previous_T * (1 - thermal.Actuator)
-
-                # if step - (step//70)*90 == 0:
-                #      print('step', step, step//10)
-                #      print('stripe, step', stripe, step)
-                #      thermal.Display(thermal.current_T)
+                # concat_T = thermal.previous_T * (1 - thermal.Actuator)
 
                 # Update Location
                 heat_loc[0] += 1
 
                 # record the temperature distribution
-                T_first_layer_count.append(real_T)
-                T_full_layer_count.append(concat_T)
+                T_first_layers.append(real_T)
+                # T_full_layer_count.append(concat_T)
 
             # add the sleep time and wait for heater moving
             for step in range(TIME_SLEEP):
-                thermal.Step(P, SLEEP_SPEED, heat_loc, False)
+                thermal.Step(P, V0, heat_loc, False)
+                global_count += 1
 
                 real_T = thermal.current_T * thermal.Actuator
-                concat_T = thermal.previous_T * (1- thermal.Actuator)
+                # concat_T = thermal.previous_T * (1 - thermal.Actuator) + real_T
 
-                T_first_layer_count.append(real_T)
-                T_full_layer_count.append(concat_T)
+                T_first_layers.append(real_T)
+                # T_full_layer_count.append(concat_T)
 
             # one stripe is done
             heat_loc[1] += INTERVAL_Y  # 加上层间的距离，由道宽以及重叠率决定
@@ -71,7 +70,7 @@ def simulation(input_vector):
         heat_loc[2] += 1
         thermal.reset()
 
-    return T_first_layer_count, T_full_layer_count
+    return T_first_layers, T_full_layer_count
 
 
 def MSE(simu, real):
@@ -96,16 +95,35 @@ def mean_squared_rate(x_pred, x_real):
     return mean_error_rate
 
 
+# 最小误差帧映射函数
+def get_min_error_mapping(input_frame_count, target_frame_count):
+
+    """
+    Compute the optimal mapping from input frames to target frames with minimal error.
+
+    Args:
+        input_frame_count (int): Number of input frames.
+        target_frame_count (int): Number of target frames.
+
+    Returns:
+        list: List of input frame indices corresponding to the target frames.
+    """
+
+    # Calculate the step size
+    input_frame_count = 175
+    target_frame_count = 56     # maybe 57
+
+    step = (input_frame_count - 1) / (target_frame_count - 1)
+
+    # Generate the indices
+    corresponding_frames = [round(i * step) for i in range(target_frame_count)]
+
+    return corresponding_frames
+
+
 if __name__ == "__main__":
 
     # find the path
-    path = 'xxxxxxx'
+    path = "D:\\test\\calibration\\csv"
     real_data = calibration(path)
 
-    # simulated surrogate model
-    input_vector = np.full(35, 5e-3)
-    simu_data_half, simu_data_full = simulation(input_vector)
-
-    # calculate error sequence
-    mse_sequence = MSE(simu_data_full, real_data)
-    np.save("mse", mse_sequence)

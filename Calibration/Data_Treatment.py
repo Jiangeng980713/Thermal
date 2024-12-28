@@ -1,11 +1,8 @@
-from functions import *
 import cv2
-import numpy as np
-import pandas as pd
 import glob
-import os
 import matplotlib.pyplot as plt
-import sys
+import os
+import numpy as np
 
 
 def Display(matrix):
@@ -13,7 +10,7 @@ def Display(matrix):
     plt.show()
 
 
-def apply_perspective_transform(image):
+def spatial_calibration(image):
     """
     应用透视变换，将斜视角图像转换为俯视图，并转换为灰度图像。
 
@@ -28,14 +25,14 @@ def apply_perspective_transform(image):
 
     # 原始图像中待变换的四个点（例如，某个矩形区域的四个角）
     src_points = np.float32([
-        [540, 294],  # 左上角
-        [675, 295],  # 右上角
-        [671, 318],  # 右下角
-        [533, 320]  # 左下角
+        [99, 105],  # 左上角
+        [337, 107],  # 右上角
+        [332, 158],  # 右下角
+        [95, 156]  # 左下角
     ])
 
     # 目标图像大小 (宽度, 高度)，也就是俯视图的分辨率，改大小就是实现自适应池化的过程
-    dst_size = (150, 46)
+    dst_size = (175, 46)
 
     # 定义目标位置的四个点（俯视图的四个角点）
     dst_points = np.float32([
@@ -53,29 +50,44 @@ def apply_perspective_transform(image):
 
     return transformed_image
 
-
-def load_and_save_figures_to_csv(folder_path):
-
-    csv_files = glob.glob(os.path.join(folder_path, "*.csv"))
-
-    # 遍历每个文件进行处理
-    for file in csv_files:
-
-        # 加载数据
-        data = np.loadtxt(file, delimiter=',')
-
-        # 对数据进行透视变换
-        data_transformed = apply_perspective_transform(data)
-
-        # 获取原文件名和路径
-        base_name = os.path.basename(file)  # 提取文件名
-        new_name = f"transformed_{base_name}"  # 创建新文件名
-        save_path = os.path.join(folder_path, new_name)  # 保存路径
-
-        # 保存数据到 CSV 文件
-        np.savetxt(save_path, data_transformed, delimiter=',', fmt='%.6f')
-
-    print(f"所有变换后的文件已保存到: {folder_path}")
+# def temporal_calibration():
+#
+#     # 设置文件夹路径和阈值
+#     folder_path = "D:\\test\\calibration\\csv"  # 替换为实际文件夹路径
+#     threshold = 900
+#
+#     # 初始化变量
+#     segments = []
+#     start_idx = None
+#     idx = 0
+#
+#     # 遍历文件夹中的 CSV 文件，按文件名顺序读取
+#     for file_name in sorted(os.listdir(folder_path)):
+#         if file_name.endswith(".csv"):  # 只处理 CSV 文件
+#             file_path = os.path.join(folder_path, file_name)
+#             print(file_path)
+#
+#             # 读取 CSV 文件并转换为二维矩阵
+#             matrix = pd.read_csv(file_path, header=None).values
+#
+#             # 判断是否超过阈值
+#             if np.max(matrix) > threshold:
+#                 if start_idx is None:
+#                     start_idx = idx  # 标记开始编号
+#             else:
+#                 if start_idx is not None:
+#                     segments.append((start_idx, idx - 1))  # 记录开始和结束编号
+#                     start_idx = None
+#
+#             idx += 1  # 增加文件编号
+#
+#     # 如果最后一段没有结束
+#     if start_idx is not None:
+#         segments.append((start_idx, idx - 1))  # 补充最后的段
+#
+#     # 输出结果
+#     for start, end in segments:
+#         print(f"Start Index: {start}, End Index: {end}")
 
 
 # load the figures and transform to array
@@ -85,33 +97,31 @@ def calibration(folder_path):
 
     data_list = []
 
-    # load the figs and transform them
+    # space calibration
     for file in csv_files:
+        print('simulation', file)
 
         # load data
         data = np.loadtxt(file, delimiter=',')
 
         # transform angles
-        data = apply_perspective_transform(data)  # 46, 150
+        data = spatial_calibration(data)  # 46, 175
 
         # fuse the data
         data_list.append(data)
 
     # 将所有数据合并为一个大的numpy数组
     all_data = np.vstack(data_list)
+    np.save("simulation_data", all_data)
 
-    return all_data
 
-
-# test in single figure the angle transformation  coffee-1_2919_112557.csv 温度很高 - 2700
+# test in single figure the angle transformation
 if __name__ == "__main__":
 
     mode = 'single'
 
-    if mode == 'single':     # 2203 - 2312
-        data = np.loadtxt("D:\\小范围实验\\新建文件夹\\coffee-1_2312_112557.csv", delimiter=",")
-        sample = apply_perspective_transform(data)
+    if mode == 'single':
+        data = np.loadtxt("D:\\test\\calibration\\csv\\Rec-0217_0160_194403.csv", delimiter=",")
+        sample = spatial_calibration(data)
+        # Display(data)
         Display(sample)
-    else:
-        data = calibration("D:\\小范围实验\\新建文件夹")
-        print(data.shape)
