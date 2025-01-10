@@ -1,4 +1,3 @@
-import time
 from math import *
 from Parameter import *
 import numpy as np
@@ -135,6 +134,7 @@ class Thermal():
                     heat_matrix_temp[temp_x][temp_y] = self.heater[i][j]
                     heat_matrix_current[temp_x][temp_y] = 1  # activate cell
 
+        # TODO: heat_matrix_temp * Q 温度不足
         heat_matrix_ = heat_matrix_temp * Q
         self.Actuator = self.Actuator + heat_matrix_current
         self.Actuator[self.Actuator != 0] = 1
@@ -189,8 +189,8 @@ class Thermal():
             Z_delta_2 = ((self.current_T - self.previous_T) * self.Actuator + (self.body - self.previous_T)) / (DELTA_Z/2) ** 2
             T_next_2 = (X_delta_2 + Y_delta_2 + Z_delta_2 + Uconv_previous / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T
 
+            # TODO： Problem: 1. Body 的温度应该如何计算（通过实验 / 仿真进行标定）"""
             # temperature diffusion - body
-            """Problem: 1. Body 的温度应该如何计算（通过实验 / 仿真进行标定）"""
             T_nest_body = T_next_2.copy()
 
             # update the temperature in one small cell
