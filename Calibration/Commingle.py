@@ -8,7 +8,8 @@ import os
 import numpy as np
 
 
-def Calculate_MSE(path):
+def Calculate_MSE(path, display):
+
     thermal = Thermal()
     thermal.Reset()
 
@@ -58,16 +59,21 @@ def Calculate_MSE(path):
                 # Execute One Step
                 thermal.Step(P, V0, heat_loc, True)
 
+                # print(np.average(thermal.current_T - thermal.previous_T) * thermal.Actuator)
+                # print(np.average((thermal.body - thermal.previous_T)))
+
                 # calculate the thermal distribution
-                simulation_data = thermal.current_T * thermal.Actuator
+                simulation_data = thermal.current_T
+                simulation_previous_data = thermal.previous_T
                 concat_T = thermal.previous_T * (1 - thermal.Actuator) + simulation_data
 
                 # calculate MSE
                 if heat_fps != [] and step_count == heat_fps[0]:
                     file = str(path) + "\\" + str(csv_files[0])
                     csv_temp = np.loadtxt(file, delimiter=',')
-                    physical_data = spatial_calibration(csv_temp)
-                    mse = mean_squared_rate(simulation_data, physical_data)
+                    physical_data = spatial_calibration(csv_temp, layer_num=layer)
+                    physical_data = physical_data + 273.15   # offset the temperature
+                    mse, error_rate_matrix = mean_squared_rate(simulation_data, physical_data)
 
                     # pop the used elements
                     csv_files.pop(0)
@@ -84,17 +90,27 @@ def Calculate_MSE(path):
                 heat_loc[0] += 1
                 step_count += 1
 
-                # additional assignments
-                if global_count % 175 == 0:
-                    Display(physical_data)
-                    Display(simulation_data)
-                    np.save('physical', physical_data)
-                    np.save('simulation', simulation_data)
+                # # additional assignments
+                if display:
+                    if global_count % 10 == 0:
+                        Display(physical_data)
+                        Display(simulation_data)
+                        Display(simulation_previous_data)
+
+                        np.save('simulation' + str(global_count) + '_.npy', simulation_data)
+                        np.save('simulation_' + str(global_count) + '_.npy', simulation_previous_data)
+
+                    print('global_count', global_count)
+                #     np.save('physical', physical_data)
+                #     np.save('simulation', simulation_data)
 
             # add the sleep time and wait for heater moving
             for step in range(TIME_SLEEP):
                 thermal.Step(P, V0, heat_loc, False)
                 global_count += 1
+
+                # print(np.average(thermal.current_T - thermal.previous_T) * thermal.Actuator)
+                # print(np.average((thermal.body - thermal.previous_T)))
 
                 # calculate the thermal distribution
                 simulation_data = thermal.current_T * thermal.Actuator
@@ -104,8 +120,8 @@ def Calculate_MSE(path):
                 if wait_fps != [] and step_count - CELL_SIZE_X == wait_fps[0]:
                     file = str(path) + "\\" + str(csv_files[0])
                     csv_temp = np.loadtxt(file, delimiter=',')
-                    physical_data = spatial_calibration(csv_temp)
-                    mse = mean_squared_rate(simulation_data, physical_data)
+                    physical_data = spatial_calibration(csv_temp, layer_num=layer)
+                    mse, error_rate_matrix = mean_squared_rate(simulation_data, physical_data)
 
                     # pop the used elements
                     csv_files.pop(0)
@@ -119,12 +135,19 @@ def Calculate_MSE(path):
                     high_simus.append(np.max(simulation_data))
 
                 step_count += 1
+                if display:
+                    if global_count % 10 == 0:
+                        Display(physical_data)
+                        Display(simulation_data)
+                        Display(simulation_previous_data)
 
-                if global_count % 175 == 0:
-                    Display(physical_data)
-                    Display(simulation_data)
-                    np.save('physical', physical_data)
-                    np.save('simulation', simulation_data)
+                        np.save('simulation' + str(global_count) + '_.npy', simulation_data)
+                        np.save('simulation_' + str(global_count) + '_.npy', simulation_previous_data)
+
+                    print('global_count', global_count)
+
+                # np.save('physical', physical_data)
+                # np.save('simulation', simulation_data)
 
                 # print('step_count', step_count)
                 # print('wait_fps', len(wait_fps))
@@ -149,7 +172,9 @@ def mean_squared_rate(x_pred, x_real):
     # Display(x_pred)
     # Display(x_real)
     mean_error_rate = np.mean(error_rate_matrix)
-    return mean_error_rate
+
+    return mean_error_rate, error_rate_matrix
+
 
 def Display(matrix):
 
@@ -171,43 +196,43 @@ def spatial_calibration(image, layer_num):
     """
 
     match layer_num:
+
+        case 0:
+            src_points = np.float32([
+                [99, 105],   # 左上角
+                [333, 107],  # 右上角
+                [332, 155],  # 右下角
+                [95, 153]    # 左下角
+            ])
         case 1:
             src_points = np.float32([
-                [99, 105],  # 左上角
-                [337, 107],  # 右上角
-                [332, 158],  # 右下角
-                [95, 156]  # 左下角
+                [100, 102],  # 左上角
+                [334, 104],  # 右上角
+                [328, 151],  # 右下角
+                [93, 148]    # 左下角
             ])
         case 2:
             src_points = np.float32([
-                [99, 105],  # 左上角
-                [337, 107],  # 右上角
-                [332, 158],  # 右下角
-                [95, 156]  # 左下角
+                [105, 97],   # 左上角
+                [328, 99],   # 右上角
+                [330, 149],  # 右下角
+                [92, 146]    # 左下角
             ])
         case 3:
             src_points = np.float32([
-                [99, 105],  # 左上角
-                [337, 107],  # 右上角
-                [332, 158],  # 右下角
-                [95, 156]  # 左下角
+                [105, 93],   # 左上角
+                [328, 95],   # 右上角
+                [327, 148],  # 右下角
+                [91, 144]    # 左下角
             ])
         case 4:
             src_points = np.float32([
-                [99, 105],  # 左上角
-                [337, 107],  # 右上角
-                [332, 158],  # 右下角
-                [95, 156]  # 左下角
-            ])
-        case 5:
-            src_points = np.float32([
-                [99, 105],  # 左上角
-                [337, 107],  # 右上角
-                [332, 158],  # 右下角
-                [95, 156]  # 左下角
+                [108, 89],   # 左上角
+                [328, 92],   # 右上角
+                [329, 143],  # 右下角
+                [91, 141]    # 左下角
             ])
 
-    # 目标图像大小 (宽度, 高度)，也就是俯视图的分辨率，改大小就是实现自适应池化的过程
     dst_size = (175, 46)
 
     # 定义目标位置的四个点（俯视图的四个角点）
@@ -254,7 +279,8 @@ if __name__ == "__main__":
     # find the path
     path = "D:\\test_data\\csv"
     time1 = time.time()
-    mses, global_counts, high_reals, high_simus = Calculate_MSE(path)
+    display = True
+    mses, global_counts, high_reals, high_simus = Calculate_MSE(path, display)
     time2 = time.time()
     print('time', time1-time2)
 
