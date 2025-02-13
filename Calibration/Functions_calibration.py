@@ -12,6 +12,10 @@ class Thermal():
         self.previous_T = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * Ta
         self.body = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * Ta
 
+        # middle layer
+        self.temp1 = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * Ta
+        self.temp2 = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * Ta
+
         # in-process location
         self.Actuator = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))  # requires update
 
@@ -81,6 +85,10 @@ class Thermal():
         self.body = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * Ta
         self.Actuator = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
 
+        # middle layer
+        self.temp1 = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * Ta
+        self.temp2 = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * Ta
+
     def Check_boundary(self, loc):
 
         temp = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
@@ -124,6 +132,7 @@ class Thermal():
         # the boundary location for heater on the plate
         boundary_x, boundary_y = loc[0] - self.row // 2, loc[1] - self.column // 2
 
+        # TODO: shape of the heater
         for i in range(len(self.heater[0])):
             for j in range(len(self.heater)):
                 temp_x, temp_y = boundary_x + i, boundary_y + j
@@ -177,30 +186,58 @@ class Thermal():
             """ zeros the boundary matrix"""
             # Uc_boundary = Uc_boundary_ = 0
 
+            # # TODO： with several middle layer
+            # # temperature diffusion - first layer
+            # X_delta_1 = ((self.T_upper + self.T_lower) @ self.current_T * self.Actuator) / DELTA_X ** 2
+            # Y_delta_1 = (self.current_T @ (self.T_left + self.T_right) * self.Actuator) / DELTA_Y ** 2
+            # Z_delta_1 = ((self.temp1 - self.current_T) * self.Actuator) / (DELTA_Z / 2) ** 2    # 仅仅有对中间层的交互
+            # T_next_1 = (X_delta_1 + Y_delta_1 + Z_delta_1 + Us_now / Kt) * ALPHA * (t / TIME_SCALE) + self.current_T
+            #
+            # # temp middle layer
+            # Z_delta_temp_1 = (((self.previous_T - self.temp1) + (self.current_T - self.temp1)) * self.Actuator) / (DELTA_Z / 2) ** 2
+            # T_next_temp_1 = Z_delta_temp_1 * ALPHA * (t / TIME_SCALE) + self.temp1
+            #
+            # # temperature diffusion - second layer
+            # X_delta_2 = ((self.T_upper + self.T_lower) @ self.previous_T) / DELTA_X ** 2
+            # Y_delta_2 = (self.previous_T @ (self.T_left + self.T_right)) / DELTA_Y ** 2
+            # Z_delta_2 = ((self.temp1 - self.previous_T) * self.Actuator + (self.temp2 - self.previous_T)) / (DELTA_Z / 2) ** 2
+            # T_next_2 = (X_delta_2 + Y_delta_2 + Z_delta_2 + Uconv_previous / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T
+            #
+            # # temp middle layer
+            # Z_delta_temp_2 = (((self.previous_T - self.temp2) + (self.body - self.temp2)) * self.Actuator) / (DELTA_Z / 2) ** 2
+            # T_next_temp_2 = Z_delta_temp_2 * ALPHA * (t / TIME_SCALE) + self.temp2
+            #
+            # # update the temperature in one small cell
+            # self.current_T = T_next_1.copy()
+            # self.previous_T = T_next_2.copy()
+
+            # # update the temp temperature
+            # self.temp1 = T_next_temp_1.copy()
+            # self.temp2 = T_next_temp_2.copy()
+
+            # TODO： without several middle layer
             # temperature diffusion - first layer
             X_delta_1 = ((self.T_upper + self.T_lower) @ self.current_T * self.Actuator) / DELTA_X ** 2
             Y_delta_1 = (self.current_T @ (self.T_left + self.T_right) * self.Actuator) / DELTA_Y ** 2
-            Z_delta_1 = ((self.previous_T - self.current_T) * self.Actuator) / (DELTA_Z/2) ** 2
+            Z_delta_1 = ((self.previous_T - self.current_T) * self.Actuator) / (DELTA_Z) ** 2
             T_next_1 = (X_delta_1 + Y_delta_1 + Z_delta_1 + Us_now / Kt) * ALPHA * (t / TIME_SCALE) + self.current_T
 
             # temperature diffusion - second layer
             X_delta_2 = ((self.T_upper + self.T_lower) @ self.previous_T) / DELTA_X ** 2
             Y_delta_2 = (self.previous_T @ (self.T_left + self.T_right)) / DELTA_Y ** 2
-            Z_delta_2 = ((self.current_T - self.previous_T) * self.Actuator + (self.body - self.previous_T)) / (DELTA_Z/2) ** 2
+            Z_delta_2 = ((self.current_T - self.previous_T) * self.Actuator + (self.body - self.previous_T)) / (DELTA_Z) ** 2
             T_next_2 = (X_delta_2 + Y_delta_2 + Z_delta_2 + Uconv_previous / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T
-
-            # TODO： Problem: 1. Body 的温度应该如何计算（通过实验 / 仿真进行标定）"""
-            # temperature diffusion - body
-            T_nest_body = T_next_2.copy()
 
             # update the temperature in one small cell
             self.current_T = T_next_1.copy()
             self.previous_T = T_next_2.copy()
-            self.body = T_nest_body.copy()
-            self.Actuator = self.Actuator
+
+            # TODO： Problem: 1. Body 的温度应该如何计算（通过实验 / 仿真进行标定）
+            # self.body = T_next_2.copy()
 
     # Layer-wise Temperature Update
     def reset(self):
         self.body = np.average(self.previous_T.copy())
         self.previous_T = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * np.average(self.current_T.copy())
         self.current_T = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
+        self.Actuator = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
