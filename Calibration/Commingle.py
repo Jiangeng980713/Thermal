@@ -1,8 +1,6 @@
 import time
-
 from Functions_calibration import *
 import cv2
-import glob
 import matplotlib.pyplot as plt
 import os
 import numpy as np
@@ -30,6 +28,12 @@ def Calculate_MSE(path, display):
     high_simus = []
 
     csv_files = sorted([f for f in os.listdir(path) if f.endswith('.csv')])
+
+    # 构建存储文件夹
+    current_folder = '.'
+    folder_name = str(X_TRANS) + '_' + str(Y_TRANS) + '_' + str(Z_TRANS) + '_' + str(BODY_OFFSET)+ '_' + str(NOTE)
+    save_path = os.path.join(current_folder, folder_name)
+    os.makedirs(save_path, exist_ok=True)
 
     for layer in range(LAYER_HEIGHT):
 
@@ -59,21 +63,21 @@ def Calculate_MSE(path, display):
                 # Execute One Step
                 thermal.Step(P, V0, heat_loc, True)
 
-                # print(np.average(thermal.current_T - thermal.previous_T) * thermal.Actuator)
-                # print(np.average((thermal.body - thermal.previous_T)))
-
                 # calculate the thermal distribution
                 simulation_data = thermal.current_T
                 simulation_previous_data = thermal.previous_T
                 concat_T = thermal.previous_T * (1 - thermal.Actuator) + simulation_data
+                shadow = thermal.Actuator
 
-                # calculate MSE
+                # calculate MSE - heating the layer
                 if heat_fps != [] and step_count == heat_fps[0]:
                     file = str(path) + "\\" + str(csv_files[0])
                     csv_temp = np.loadtxt(file, delimiter=',')
                     physical_data = spatial_calibration(csv_temp, layer_num=layer)
                     physical_data = physical_data + 273.15   # offset the temperature
-                    mse, error_rate_matrix = mean_squared_rate(simulation_data, physical_data)
+
+                    # 仅仅关注当前 actuator 之内的内容，之外内容没有关注
+                    mse, error_rate_matrix = mean_squared_rate(simulation_data, physical_data, shadow)
 
                     # pop the used elements
                     csv_files.pop(0)
@@ -92,15 +96,30 @@ def Calculate_MSE(path, display):
 
                 # # additional assignments
                 if display:
-                    if global_count % 10 == 0:
-                        Display(physical_data)
-                        Display(simulation_data)
-                        Display(simulation_previous_data)
 
-                        np.save('simulation' + str(global_count) + '_.npy', simulation_data)
-                        np.save('simulation_' + str(global_count) + '_.npy', simulation_previous_data)
+                    # if global_count % 10 == 0:
+                    if global_count == 1420 or global_count == 1450 or global_count == 2850:
 
-                    print('global_count', global_count)
+                        # np.save('physical-' + str(global_count) + "_1trans_0.1trans_30body", physical_data)
+                        # np.save('simulation-' + str(global_count) + "_1trans_0.1trans_30body", simulation_data)
+                        # np.save('simulation_previous-' + str(global_count) + "_1trans_0.1trans_30body", simulation_previous_data)
+
+                        # name_ = str(global_count) + str(physical_data)
+                        name_ = 'physical_data_' + str(global_count) + '.npy'
+                        file_path = os.path.join(save_path,  name_)  # 创建每个数组的保存路径
+                        np.save(file_path, physical_data)  # 保存数组
+
+                        # record data into files
+                        name_ = 'simulation_data_' + str(global_count) + '.npy'
+                        file_path = os.path.join(save_path, f'{name_}.npy')  # 创建每个数组的保存路径
+                        np.save(file_path, simulation_data)  # 保存数组
+
+                        name_ = 'simulation_previous_data_' + str(global_count) + '.npy'
+                        file_path = os.path.join(save_path, f'{name_}.npy')  # 创建每个数组的保存路径
+                        np.save(file_path, simulation_previous_data)  # 保存数组
+
+                    # print('global_count', global_count)
+
                 #     np.save('physical', physical_data)
                 #     np.save('simulation', simulation_data)
 
@@ -115,13 +134,18 @@ def Calculate_MSE(path, display):
                 # calculate the thermal distribution
                 simulation_data = thermal.current_T * thermal.Actuator
                 concat_T = thermal.previous_T * (1 - thermal.Actuator) + simulation_data
+                simulation_previous_data = thermal.previous_T
+                shadow = thermal.Actuator
 
                 # calculate MSE during waiting period
                 if wait_fps != [] and step_count - CELL_SIZE_X == wait_fps[0]:
                     file = str(path) + "\\" + str(csv_files[0])
                     csv_temp = np.loadtxt(file, delimiter=',')
                     physical_data = spatial_calibration(csv_temp, layer_num=layer)
-                    mse, error_rate_matrix = mean_squared_rate(simulation_data, physical_data)
+                    physical_data = physical_data + 273.15
+
+                    # 仅仅关注当前actuator之内的内容，之外内容没有关注
+                    mse, error_rate_matrix = mean_squared_rate(simulation_data, physical_data, shadow)
 
                     # pop the used elements
                     csv_files.pop(0)
@@ -135,22 +159,27 @@ def Calculate_MSE(path, display):
                     high_simus.append(np.max(simulation_data))
 
                 step_count += 1
+
                 if display:
-                    if global_count % 10 == 0:
-                        Display(physical_data)
-                        Display(simulation_data)
-                        Display(simulation_previous_data)
+                    if global_count == 1420 or global_count == 1450 or global_count == 2850:
 
-                        np.save('simulation' + str(global_count) + '_.npy', simulation_data)
-                        np.save('simulation_' + str(global_count) + '_.npy', simulation_previous_data)
+                        # np.save('physical-' + str(global_count), physical_data)
+                        # np.save('simulation-' + str(global_count) + "_1trans_0.1trans_30body", simulation_data)
+                        # np.save('simulation_previous' + str(global_count) + "_1trans_0.1trans_30body", simulation_previous_data)
 
-                    print('global_count', global_count)
+                        # # 新建立一个文件夹，存储np文件
+                        # # record data into files
+                        name_ = 'physical_data_' + str(global_count) + '.npy'
+                        file_path = os.path.join(save_path, f'{name_}.npy')  # 创建每个数组的保存路径
+                        np.save(file_path, physical_data)  # 保存数组
 
-                # np.save('physical', physical_data)
-                # np.save('simulation', simulation_data)
+                        name_ = 'simulation_data_' + str(global_count) + '.npy'
+                        file_path = os.path.join(save_path, f'{name_}.npy')  # 创建每个数组的保存路径
+                        np.save(file_path, simulation_data)  # 保存数组
 
-                # print('step_count', step_count)
-                # print('wait_fps', len(wait_fps))
+                        name_ = 'simulation_previous_data_' + str(global_count) + '.npy'
+                        file_path = os.path.join(save_path, f'{name_}.npy')  # 创建每个数组的保存路径
+                        np.save(file_path, simulation_previous_data)  # 保存数组
 
             # one stripe is done
             heat_loc[1] += INTERVAL_Y  # 加上层间的距离，由道宽以及重叠率决定
@@ -161,16 +190,14 @@ def Calculate_MSE(path, display):
         heat_loc[2] += 1
         thermal.reset()
 
-    return mses, global_counts, high_reals, high_simus
+    return mses, global_counts, high_reals, high_simus, save_path
 
 
 # 均方误差比率
-def mean_squared_rate(x_pred, x_real):
+def mean_squared_rate(x_pred, x_real, shadow):
     epsilon = 1e-8
-    error_rate_matrix = np.abs(x_pred - x_real) / (np.abs(x_real) + epsilon) * 100
-    # Display(np.abs(x_pred - x_real))
-    # Display(x_pred)
-    # Display(x_real)
+    error_rate_matrix = np.abs(x_pred - x_real) / (x_real + epsilon) * 100
+    error_rate_matrix = error_rate_matrix * shadow
     mean_error_rate = np.mean(error_rate_matrix)
 
     return mean_error_rate, error_rate_matrix
@@ -280,18 +307,22 @@ if __name__ == "__main__":
     path = "D:\\test_data\\csv"
     time1 = time.time()
     display = True
-    mses, global_counts, high_reals, high_simus = Calculate_MSE(path, display)
+    mses, global_counts, high_reals, high_simus, save_path = Calculate_MSE(path, display)
     time2 = time.time()
     print('time', time1-time2)
 
-    with open('mses.txt', 'w') as f:
+    # record mses
+    file_path = os.path.join(save_path, 'mses.txt')
+    with open(file_path, 'w') as f:
         f.write(','.join(map(str, mses)))
 
-    with open('global_counts.txt', 'w') as f:
+    # record global_counts
+    file_path = os.path.join(save_path, 'global_counts.txt')
+    with open(file_path, 'w') as f:
         f.write(','.join(map(str, global_counts)))
 
-    with open('physical.txt', 'w') as f:
-        f.write(','.join(map(str, high_reals)))
-
-    with open('simulation.txt', 'w') as f:
-        f.write(','.join(map(str, high_simus)))
+    # with open('physical.txt', 'w') as f:
+    #     f.write(','.join(map(str, high_reals)))
+    #
+    # with open('simulation.txt', 'w') as f:
+    #     f.write(','.join(map(str, high_simus)))
