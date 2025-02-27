@@ -111,11 +111,11 @@ def Calculate_MSE(path, display):
 
                         # record data into files
                         name_ = 'simulation_data_' + str(global_count) + '.npy'
-                        file_path = os.path.join(save_path, f'{name_}.npy')  # 创建每个数组的保存路径
+                        file_path = os.path.join(save_path, name_)  # 创建每个数组的保存路径
                         np.save(file_path, simulation_data)  # 保存数组
 
                         name_ = 'simulation_previous_data_' + str(global_count) + '.npy'
-                        file_path = os.path.join(save_path, f'{name_}.npy')  # 创建每个数组的保存路径
+                        file_path = os.path.join(save_path, name_)  # 创建每个数组的保存路径
                         np.save(file_path, simulation_previous_data)  # 保存数组
 
                     # print('global_count', global_count)
@@ -170,15 +170,15 @@ def Calculate_MSE(path, display):
                         # # 新建立一个文件夹，存储np文件
                         # # record data into files
                         name_ = 'physical_data_' + str(global_count) + '.npy'
-                        file_path = os.path.join(save_path, f'{name_}.npy')  # 创建每个数组的保存路径
+                        file_path = os.path.join(save_path, name_)  # 创建每个数组的保存路径
                         np.save(file_path, physical_data)  # 保存数组
 
                         name_ = 'simulation_data_' + str(global_count) + '.npy'
-                        file_path = os.path.join(save_path, f'{name_}.npy')  # 创建每个数组的保存路径
+                        file_path = os.path.join(save_path, name_)  # 创建每个数组的保存路径
                         np.save(file_path, simulation_data)  # 保存数组
 
                         name_ = 'simulation_previous_data_' + str(global_count) + '.npy'
-                        file_path = os.path.join(save_path, f'{name_}.npy')  # 创建每个数组的保存路径
+                        file_path = os.path.join(save_path, name_)  # 创建每个数组的保存路径
                         np.save(file_path, simulation_previous_data)  # 保存数组
 
             # one stripe is done
@@ -307,6 +307,7 @@ if __name__ == "__main__":
     path = "D:\\test_data\\csv"
     time1 = time.time()
     display = True
+
     mses, global_counts, high_reals, high_simus, save_path = Calculate_MSE(path, display)
     time2 = time.time()
     print('time', time1-time2)
@@ -320,6 +321,17 @@ if __name__ == "__main__":
     file_path = os.path.join(save_path, 'global_counts.txt')
     with open(file_path, 'w') as f:
         f.write(','.join(map(str, global_counts)))
+
+    py_file_path = "../Parameter.py"
+    txt_file_path = os.path.join(save_path, 'Parameter.txt')
+
+    # 读取 .py 文件内容
+    with open(py_file_path, "r", encoding="utf-8") as file:
+        content = file.read()
+
+    # 将内容写入 .txt 文件
+    with open(txt_file_path, "w") as txt_file:
+        txt_file.write(content)
 
     # with open('physical.txt', 'w') as f:
     #     f.write(','.join(map(str, high_reals)))

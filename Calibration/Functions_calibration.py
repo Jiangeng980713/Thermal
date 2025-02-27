@@ -126,7 +126,6 @@ class Thermal():
         gauss_kernel = np.exp(-2 * (x ** 2 + y ** 2) / ((HEATER_ROW // 2) ** 2))
         return gauss_kernel / np.max(gauss_kernel)
 
-    # TODO: heat_matrix_temp * Q 温度不足
     def Heat_matrix(self, P, loc):
 
         Q = 2 * LAMDA * P / (pi * Rb ** 2)
