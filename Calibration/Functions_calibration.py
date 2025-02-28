@@ -163,9 +163,9 @@ class Thermal():
 
         # 均值向量和协方差矩阵
         mu = np.array([0, 0, 0])  # 均值向量
-        sigma = np.array([[3.5 ** 2, 0, 0],
-                          [0, 3.5 ** 2, 0],
-                          [0, 0, 1.2 ** 2]])  # 协方差矩阵
+        sigma = np.array([[SIGMA_1 ** 2, 0, 0],
+                          [0, SIGMA_1 ** 2, 0],
+                          [0, 0, SIGMA_2 ** 2]])  # 协方差矩阵
 
         x = np.arange(rows) - (rows - 1) / 2
         y = np.arange(cols) - (cols - 1) / 2

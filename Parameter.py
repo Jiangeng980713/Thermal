@@ -44,6 +44,8 @@ Ta = 300
 # heater parameter
 LAMDA = 0.5
 Rb = 0.0012  # Rb 越小，温度越高
+SIGMA_1 = 4
+SIGMA_2 = 1.2
 
 # parameters for materials
 Kt = 22.5  # W/mK

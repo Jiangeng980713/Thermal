@@ -4,6 +4,7 @@ import cv2
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+from datetime import datetime
 
 
 def Calculate_MSE(path, display):
@@ -31,7 +32,8 @@ def Calculate_MSE(path, display):
 
     # 构建存储文件夹
     current_folder = '.'
-    folder_name = str(X_TRANS) + '_' + str(Y_TRANS) + '_' + str(Z_TRANS) + '_' + str(BODY_OFFSET)+ '_' + str(NOTE)
+
+    folder_name = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
     save_path = os.path.join(current_folder, folder_name)
     os.makedirs(save_path, exist_ok=True)
 
