@@ -126,6 +126,7 @@ class Thermal():
         gauss_kernel = np.exp(-2 * (x ** 2 + y ** 2) / ((HEATER_ROW // 2) ** 2))
         return gauss_kernel / np.max(gauss_kernel)
 
+    # TODO: heat_matrix_temp * Q 温度不足
     def Heat_matrix(self, P, loc):
 
         Q = 2 * LAMDA * P / (pi * Rb ** 2)
@@ -233,7 +234,7 @@ class Thermal():
 
         return heat_matrix_layer_1, heat_matrix_layer_2, heat_matrix_layer_3
 
-    def Step(self, P, V, loc, heater_actuated):
+    def Step(self, P, V, loc, heater_actuated, right_bound):
 
         Time_rate = V / self.Vs
 
@@ -302,7 +303,7 @@ class Thermal():
             # # temp middle layer
             # Z_delta_temp_2 = (((self.previous_T - self.temp2) + (self.body - self.temp2)) * self.Actuator) / (DELTA_Z / 2) ** 2
             # T_next_temp_2 = Z_delta_temp_2 * ALPHA * (t / TIME_SCALE) + self.temp2
-            #
+
             # # update the temperature in one small cell
             # self.current_T = T_next_1.copy()
             # self.previous_T = T_next_2.copy()
@@ -311,29 +312,29 @@ class Thermal():
             # self.temp1 = T_next_temp_1.copy()
             # self.temp2 = T_next_temp_2.copy()
 
-            #  三层模型
-            # temperature diffusion - first layer
-            X_delta_1 = X_TRANS * ((self.T_upper + self.T_lower) @ self.current_T * self.Actuator) / DELTA_X ** 2
-            Y_delta_1 = Y_TRANS * (self.current_T @ (self.T_left + self.T_right) * self.Actuator) / DELTA_Y ** 2
-            Z_delta_1 = Z_TRANS * ((self.previous_T - self.current_T) * self.Actuator) / (DELTA_Z) ** 2
-            T_next_1 = (X_delta_1 + Y_delta_1 + Z_delta_1 + Us_now_1 / Kt) * ALPHA * (t / TIME_SCALE) + self.current_T
+            # #  三层模型
+            # # temperature diffusion - first layer
+            # X_delta_1 = X_TRANS * ((self.T_upper + self.T_lower) @ self.current_T * self.Actuator) / DELTA_X ** 2
+            # Y_delta_1 = Y_TRANS * (self.current_T @ (self.T_left + self.T_right) * self.Actuator) / DELTA_Y ** 2
+            # Z_delta_1 = Z_TRANS * ((self.previous_T - self.current_T) * self.Actuator) / (DELTA_Z) ** 2
+            # T_next_1 = (X_delta_1 + Y_delta_1 + Z_delta_1 + Us_now_1 / Kt) * ALPHA * (t / TIME_SCALE) + self.current_T
 
-            # temperature diffusion - second layer
-            X_delta_2 = X_TRANS * ((self.T_upper + self.T_lower) @ self.previous_T) / DELTA_X ** 2
-            Y_delta_2 = Y_TRANS * (self.previous_T @ (self.T_left + self.T_right)) / DELTA_Y ** 2
-            Z_delta_2 = Z_TRANS * ((self.current_T - self.previous_T) * self.Actuator + (self.previous_T_2 - self.previous_T)) / (DELTA_Z) ** 2
-            T_next_2 = (X_delta_2 + Y_delta_2 + Z_delta_2 + (Uconv_previous + Us_now_2) / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T
+            # # temperature diffusion - second layer
+            # X_delta_2 = X_TRANS * ((self.T_upper + self.T_lower) @ self.previous_T) / DELTA_X ** 2
+            # Y_delta_2 = Y_TRANS * (self.previous_T @ (self.T_left + self.T_right)) / DELTA_Y ** 2
+            # Z_delta_2 = Z_TRANS * ((self.current_T - self.previous_T) * self.Actuator + (self.previous_T_2 - self.previous_T)) / (DELTA_Z) ** 2
+            # T_next_2 = (X_delta_2 + Y_delta_2 + Z_delta_2 + (Uconv_previous + Us_now_2) / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T
 
-            # add a third layer
-            X_delta_3 = X_TRANS * ((self.T_upper + self.T_lower) @ self.previous_T_2) / DELTA_X ** 2
-            Y_delta_3 = Y_TRANS * (self.previous_T_2 @ (self.T_left + self.T_right)) / DELTA_Y ** 2
-            Z_delta_3 = Z_TRANS * ((self.previous_T - self.previous_T_2) + (self.body - self.previous_T_2)) / (DELTA_Z) ** 2
-            T_next_3 = (X_delta_3 + Y_delta_3 + Z_delta_3 + Us_now_3 / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T_2
+            # # add a third layer
+            # X_delta_3 = X_TRANS * ((self.T_upper + self.T_lower) @ self.previous_T_2) / DELTA_X ** 2
+            # Y_delta_3 = Y_TRANS * (self.previous_T_2 @ (self.T_left + self.T_right)) / DELTA_Y ** 2
+            # Z_delta_3 = Z_TRANS * ((self.previous_T - self.previous_T_2) + (self.body - self.previous_T_2)) / (DELTA_Z) ** 2
+            # T_next_3 = (X_delta_3 + Y_delta_3 + Z_delta_3 + Us_now_3 / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T_2
 
-            # update the temperature in one small cell / body 温度不变
-            self.current_T = T_next_1.copy()
-            self.previous_T = T_next_2.copy()
-            self.previous_T_2 = T_next_3.copy()
+            # # update the temperature in one small cell / body 温度不变
+            # self.current_T = T_next_1.copy()
+            # self.previous_T = T_next_2.copy()
+            # self.previous_T_2 = T_next_3.copy()
 
             # # 原始 - body 固定参数
             # # temperature diffusion - first layer
@@ -362,7 +363,7 @@ class Thermal():
             # # temperature diffusion - second layer
             # X_delta_2 = ((self.T_upper + self.T_lower) @ self.previous_T) / DELTA_X ** 2
             # Y_delta_2 = (self.previous_T @ (self.T_left + self.T_right)) / DELTA_Y ** 2
-            # Z_delta_2 = ((self.current_T - self.previous_T) * self.Actuator + (self.body - self.previous_T)) / (DELTA_Z) ** 2
+            # Z_delta_2 = ((self.current_T - self.previous_T) * selff.Actuator + (self.body - self.previous_T)) / (DELTA_Z) ** 2
             # T_next_2 = (X_delta_2 + Y_delta_2 + Z_delta_2 + Uconv_previous / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T
 
             # # update the temperature in one small cell
@@ -370,8 +371,108 @@ class Thermal():
             # self.previous_T = T_next_2.copy()
             # self.body = T_next_2.copy()
 
+            # ''' 经典模型三层含有右侧的 bound'''
+            # if not right_bound:
+            #
+            #     #  三层模型
+            #     # temperature diffusion - first layer
+            #     X_delta_1 = X_TRANS * ((self.T_upper + self.T_lower) @ self.current_T * self.Actuator) / DELTA_X ** 2
+            #     Y_delta_1 = Y_TRANS * (self.current_T @ (INNER_TRANS_ * self.T_left + INNER_TRANS_ * self.T_right) * self.Actuator) / DELTA_Y ** 2
+            #     Z_delta_1 = Z_TRANS * ((self.previous_T - self.current_T) * self.Actuator) / (DELTA_Z) ** 2
+            #     T_next_1 = (X_delta_1 + Y_delta_1 + Z_delta_1 + Us_now_1 / Kt) * ALPHA * (t / TIME_SCALE) + self.current_T
+            #
+            #     # temperature diffusion - second layer
+            #     X_delta_2 = X_TRANS * ((self.T_upper + self.T_lower) @ self.previous_T) / DELTA_X ** 2
+            #     Y_delta_2 = Y_TRANS * (self.previous_T @ (self.T_left + self.T_right)) / DELTA_Y ** 2
+            #     Z_delta_2 = Z_TRANS * ((self.current_T - self.previous_T) * self.Actuator + (self.body - self.previous_T)) / (DELTA_Z) ** 2
+            #     T_next_2 = (X_delta_2 + Y_delta_2 + Z_delta_2 + (Uconv_previous + Us_now_2) / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T
+            #
+            #     # add a third layer
+            #     X_delta_3 = X_TRANS * ((self.T_upper + self.T_lower) @ self.previous_T_2) / DELTA_X ** 2
+            #     Y_delta_3 = Y_TRANS * (self.previous_T_2 @ (self.T_left + self.T_right)) / DELTA_Y ** 2
+            #     Z_delta_3 = Z_TRANS * ((self.previous_T - self.previous_T_2) + (self.body - self.previous_T_2)) / (DELTA_Z) ** 2
+            #     T_next_3 = (X_delta_3 + Y_delta_3 + Z_delta_3 + Us_now_3 / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T_2
+            #
+            # else:
+            #     # temperature diffusion - first layer
+            #     X_delta_1 = X_TRANS * ((self.T_upper + self.T_lower) @ self.current_T * self.Actuator) / DELTA_X ** 2
+            #
+            #     # T @ (A-B) @ C = ^T
+            #     # Y_delta_right = (self.current_T @ self.A_right - np.hstack((self.current_T, np.zeros((CELL_SIZE_X, 1))))) @ self.C_right
+            #     # Y_delta_1 = Y_TRANS * (self.current_T @ self.T_left * self.Actuator + Y_delta_right * self.Actuator) / (DELTA_Y) ** 2
+            #
+            #     Y_delta_1 = Y_TRANS * (self.current_T @ self.T_left * self.Actuator + INNER_TRANS * self.current_T @ self.T_right * self.Actuator) / DELTA_Y ** 2
+            #     Z_delta_1 = Z_TRANS * ((self.previous_T - self.current_T) * self.Actuator) / (DELTA_Z) ** 2
+            #     T_next_1 = (X_delta_1 + Y_delta_1 + Z_delta_1 + Us_now_1 / Kt) * ALPHA * (t / TIME_SCALE) + self.current_T
+            #
+            #     # temperature diffusion - second layer
+            #     X_delta_2 = X_TRANS * ((self.T_upper + self.T_lower) @ self.previous_T) / DELTA_X ** 2
+            #     Y_delta_2 = Y_TRANS * (self.previous_T @ (self.T_left + self.T_right)) / DELTA_Y ** 2
+            #     Z_delta_2 = Z_TRANS * ((self.current_T - self.previous_T) * self.Actuator + (self.body - self.previous_T)) / (DELTA_Z) ** 2
+            #     T_next_2 = (X_delta_2 + Y_delta_2 + Z_delta_2 + (Uconv_previous + Us_now_2) / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T
+            #
+            #     # # add a third layer
+            #     X_delta_3 = X_TRANS * ((self.T_upper + self.T_lower) @ self.previous_T_2) / DELTA_X ** 2
+            #     Y_delta_3 = Y_TRANS * (self.previous_T_2 @ (self.T_left + self.T_right)) / DELTA_Y ** 2
+            #     Z_delta_3 = Z_TRANS * ((self.previous_T - self.previous_T_2) + (self.body - self.previous_T_2)) / (DELTA_Z) ** 2
+            #     T_next_3 = (X_delta_3 + Y_delta_3 + Z_delta_3 + Us_now_3 / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T_2
+
+            ''' 经典模型三层含有右侧的 bound'''
+            if not right_bound:
+
+                #  三层模型
+                # temperature diffusion - first layer
+                X_delta_1 = X_TRANS * ((self.T_upper + self.T_lower) @ self.current_T * self.Actuator) / DELTA_X ** 2
+                Y_delta_1 = Y_TRANS * (self.current_T @ (INNER_TRANS_ * self.T_left + INNER_TRANS_ * self.T_right) * self.Actuator) / DELTA_Y ** 2
+                Z_delta_1 = Z_TRANS * ((self.previous_T - self.current_T) * self.Actuator) / (DELTA_Z) ** 2
+                T_next_1 = (X_delta_1 + Y_delta_1 + Z_delta_1 + Us_now_1 / Kt) * ALPHA * (t / TIME_SCALE) + self.current_T
+
+                # temperature diffusion - second layer
+                X_delta_2 = X_TRANS * ((self.T_upper + self.T_lower) @ self.previous_T) / DELTA_X ** 2
+                Y_delta_2 = Y_TRANS * (self.previous_T @ (self.T_left + self.T_right)) / DELTA_Y ** 2
+                Z_delta_2 = Z_TRANS * ((self.current_T - self.previous_T) * self.Actuator + (self.body - self.previous_T)) / (DELTA_Z) ** 2
+                T_next_2 = (X_delta_2 + Y_delta_2 + Z_delta_2 + (Uconv_previous + Us_now_2) / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T
+
+                # add a third layer
+                X_delta_3 = X_TRANS * ((self.T_upper + self.T_lower) @ self.previous_T_2) / DELTA_X ** 2
+                Y_delta_3 = Y_TRANS * (self.previous_T_2 @ (self.T_left + self.T_right)) / DELTA_Y ** 2
+                Z_delta_3 = Z_TRANS * ((self.previous_T - self.previous_T_2) + (self.body - self.previous_T_2)) / (DELTA_Z) ** 2
+                T_next_3 = (X_delta_3 + Y_delta_3 + Z_delta_3 + Us_now_3 / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T_2
+
+            else:
+                # temperature diffusion - first layer
+                X_delta_1 = X_TRANS * ((self.T_upper + self.T_lower) @ self.current_T * self.Actuator) / DELTA_X ** 2
+
+                # T @ (A-B) @ C = ^T
+                # Y_delta_right = (self.current_T @ self.A_right - np.hstack((self.current_T, np.zeros((CELL_SIZE_X, 1))))) @ self.C_right
+                # Y_delta_1 = Y_TRANS * (self.current_T @ self.T_left * self.Actuator + Y_delta_right * self.Actuator) / (DELTA_Y) ** 2
+
+                Y_delta_1 = Y_TRANS * (INNER_TRANS_ * self.current_T @ self.T_left * self.Actuator + INNER_TRANS * self.current_T @ self.T_right * self.Actuator) / DELTA_Y ** 2
+                Z_delta_1 = Z_TRANS * ((self.previous_T - self.current_T) * self.Actuator) / (DELTA_Z) ** 2
+                T_next_1 = (X_delta_1 + Y_delta_1 + Z_delta_1 + Us_now_1 / Kt) * ALPHA * (t / TIME_SCALE) + self.current_T
+
+                # temperature diffusion - second layer
+                X_delta_2 = X_TRANS * ((self.T_upper + self.T_lower) @ self.previous_T) / DELTA_X ** 2
+                Y_delta_2 = Y_TRANS * (self.previous_T @ (self.T_left + self.T_right)) / DELTA_Y ** 2
+                Z_delta_2 = Z_TRANS * ((self.current_T - self.previous_T) * self.Actuator + (self.body - self.previous_T)) / (DELTA_Z) ** 2
+                T_next_2 = (X_delta_2 + Y_delta_2 + Z_delta_2 + (Uconv_previous + Us_now_2) / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T
+
+                # # add a third layer
+                X_delta_3 = X_TRANS * ((self.T_upper + self.T_lower) @ self.previous_T_2) / DELTA_X ** 2
+                Y_delta_3 = Y_TRANS * (self.previous_T_2 @ (self.T_left + self.T_right)) / DELTA_Y ** 2
+                Z_delta_3 = Z_TRANS * ((self.previous_T - self.previous_T_2) + (self.body - self.previous_T_2)) / (DELTA_Z) ** 2
+                T_next_3 = (X_delta_3 + Y_delta_3 + Z_delta_3 + Us_now_3 / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T_2
+
+            # update the temperature in one small cell / body 温度不变
+            self.current_T = T_next_1.copy()
+            self.previous_T = T_next_2.copy()
+            self.previous_T_2 = T_next_3.copy()
+
+        return X_delta_1, Y_delta_1, Z_delta_1
+
     # Layer-wise Temperature Update
     def reset(self):
+
         self.body = np.average(self.previous_T.copy())
         # 如果存在三维输入且三层传热
         self.previous_T_2 = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * np.average(self.previous_T.copy())

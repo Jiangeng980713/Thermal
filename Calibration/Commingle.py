@@ -4,7 +4,6 @@ import cv2
 import matplotlib.pyplot as plt
 import os
 import numpy as np
-from datetime import datetime
 
 
 def Calculate_MSE(path, display):
@@ -33,7 +32,7 @@ def Calculate_MSE(path, display):
     # 构建存储文件夹
     current_folder = '.'
 
-    folder_name = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+    folder_name = str(INNER_TRANS) + "_" + str(INNER_TRANS_) + '_' + str(NOTE)
     save_path = os.path.join(current_folder, folder_name)
     os.makedirs(save_path, exist_ok=True)
 
@@ -56,6 +55,16 @@ def Calculate_MSE(path, display):
             heat_fps = Balance_FPS(CELL_SIZE_X, heat_length)
             wait_fps = Balance_FPS(TIME_SLEEP, wait_length)
 
+            # check whether last stripe boundary offset
+            if stripe // (STRIPE_NUM - 1) == 1:
+
+                right_bound = RIGHT_BOUND
+                # print(stripe // (STRIPE_NUM - 1), right_bound)
+
+            else:
+                right_bound = False
+                # print(stripe // (STRIPE_NUM - 1), right_bound)
+
             # heater is working
             for step in range(CELL_SIZE_X):
 
@@ -63,7 +72,7 @@ def Calculate_MSE(path, display):
                 global_count += 1
 
                 # Execute One Step
-                thermal.Step(P, V0, heat_loc, True)
+                thermal.Step(P, V0, heat_loc, True, right_bound=right_bound)
 
                 # calculate the thermal distribution
                 simulation_data = thermal.current_T
@@ -127,7 +136,7 @@ def Calculate_MSE(path, display):
 
             # add the sleep time and wait for heater moving
             for step in range(TIME_SLEEP):
-                thermal.Step(P, V0, heat_loc, False)
+                thermal.Step(P, V0, heat_loc, False, right_bound=right_bound)
                 global_count += 1
 
                 # print(np.average(thermal.current_T - thermal.previous_T) * thermal.Actuator)
