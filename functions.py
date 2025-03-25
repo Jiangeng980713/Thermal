@@ -76,13 +76,6 @@ class Thermal():
         plt.imshow(matrix)
         plt.show()
 
-    def save_FIG(self, matrix, name):
-        plt.imshow(matrix)
-        plt.savefig("figure" + name)
-
-    def transform_heat(self):
-        return 0
-
     def Reset(self):
         self.current_T = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * Ta
         self.previous_T = np.ones((CELL_SIZE_X, CELL_SIZE_Y)) * Ta

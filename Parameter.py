@@ -1,3 +1,10 @@
+# training parameter
+PARTICLE_NUM = 30  # 粒子数量
+EPISODE_NUM = 100  # 最大迭代次数
+
+
+
+
 # simulation length and height
 SIMU_L = 0.03
 SIMU_W = 0.0092
@@ -27,6 +34,7 @@ DELTA_X = SIMU_L / CELL_SIZE_X
 DELTA_Y = SIMU_W / CELL_SIZE_Y
 DELTA_Z = SIMU_H / LAYER_HEIGHT
 
+P_START = 600
 P_Max = 800
 P_Min = 400
 

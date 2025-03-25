@@ -4,7 +4,6 @@ import numpy as np
 
 
 def worker_agent(V):
-
     thermal = Thermal()
     thermal.Reset()
 
@@ -48,9 +47,8 @@ def worker_agent(V):
 
             # heater is working
             for step in range(CELL_SIZE_X):
-
                 # Execute One Step
-                thermal.Step(P, V0, heat_loc, True, right_bound=right_bound)
+                _, _, _ = thermal.Step(P, V0, heat_loc, True, right_bound=right_bound)
                 loss = loss_calculation(thermal.current_T, heat_loc)
 
                 # Update Location
@@ -79,7 +77,7 @@ def worker_agent(V):
             for step in range(TIME_SLEEP):
 
                 # Waiting the heater between stripe
-                thermal.Step(P, V0, heat_loc, False, right_bound=right_bound)
+                _, _, _ = thermal.Step(P, V0, heat_loc, False, right_bound=right_bound)
                 loss = 0
 
                 global_count += 1
@@ -90,6 +88,7 @@ def worker_agent(V):
             # one stripe is done
             heat_loc[1] += INTERVAL_Y  # 加上层间的距离，由道宽以及重叠率决定
             stripe_count += 1
+
             print('stripe_count', stripe_count)
 
         # one layer is done
@@ -98,14 +97,21 @@ def worker_agent(V):
 
     return losses, global_counts, save_path
 
+
+# TODO: finish cost function
 def loss_calculation(physical_matrix, loc):
+
     # further development
-    loss = 0
+    location = [loc[0], loc[1]]
 
-
-
+    # calculate the loss
+    if loc[1] <= 3 * STRIPE_NUM:
+        loss = physical_matrix[location[0], location[1]]
+    else:
+        loss = 0
 
     return loss
+
 
 if __name__ == "__main__":
     vector = np.random.uniform(V_MIN, V_MAX, 35)
