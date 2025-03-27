@@ -66,7 +66,7 @@ SIGMA_2 = 1.2
 # parameters for materials
 Kt = 22.5  # W/mK
 h = 25  # W/(m^2 * K)
-ALPHA = 5.632E-6  # m^2/s
+ALPHA_T = 5.632E-6  # m^2/s
 
 VS = 6E-3  # m/s -> 360 mm/min
 

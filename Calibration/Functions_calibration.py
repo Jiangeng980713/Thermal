@@ -425,19 +425,19 @@ class Thermal():
                 X_delta_1 = X_TRANS * ((self.T_upper + self.T_lower) @ self.current_T * self.Actuator) / DELTA_X ** 2
                 Y_delta_1 = Y_TRANS * (self.current_T @ (INNER_TRANS_ * self.T_left + INNER_TRANS_ * self.T_right) * self.Actuator) / DELTA_Y ** 2
                 Z_delta_1 = Z_TRANS * ((self.previous_T - self.current_T) * self.Actuator) / (DELTA_Z) ** 2
-                T_next_1 = (X_delta_1 + Y_delta_1 + Z_delta_1 + Us_now_1 / Kt) * ALPHA * (t / TIME_SCALE) + self.current_T
+                T_next_1 = (X_delta_1 + Y_delta_1 + Z_delta_1 + Us_now_1 / Kt) * ALPHA_T * (t / TIME_SCALE) + self.current_T
 
                 # temperature diffusion - second layer
                 X_delta_2 = X_TRANS * ((self.T_upper + self.T_lower) @ self.previous_T) / DELTA_X ** 2
                 Y_delta_2 = Y_TRANS * (self.previous_T @ (self.T_left + self.T_right)) / DELTA_Y ** 2
                 Z_delta_2 = Z_TRANS * ((self.current_T - self.previous_T) * self.Actuator + (self.body - self.previous_T)) / (DELTA_Z) ** 2
-                T_next_2 = (X_delta_2 + Y_delta_2 + Z_delta_2 + (Uconv_previous + Us_now_2) / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T
+                T_next_2 = (X_delta_2 + Y_delta_2 + Z_delta_2 + (Uconv_previous + Us_now_2) / Kt) * ALPHA_T * (t / TIME_SCALE) + self.previous_T
 
                 # add a third layer
                 X_delta_3 = X_TRANS * ((self.T_upper + self.T_lower) @ self.previous_T_2) / DELTA_X ** 2
                 Y_delta_3 = Y_TRANS * (self.previous_T_2 @ (self.T_left + self.T_right)) / DELTA_Y ** 2
                 Z_delta_3 = Z_TRANS * ((self.previous_T - self.previous_T_2) + (self.body - self.previous_T_2)) / (DELTA_Z) ** 2
-                T_next_3 = (X_delta_3 + Y_delta_3 + Z_delta_3 + Us_now_3 / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T_2
+                T_next_3 = (X_delta_3 + Y_delta_3 + Z_delta_3 + Us_now_3 / Kt) * ALPHA_T * (t / TIME_SCALE) + self.previous_T_2
 
             else:
                 # temperature diffusion - first layer
@@ -449,19 +449,19 @@ class Thermal():
 
                 Y_delta_1 = Y_TRANS * (INNER_TRANS_ * self.current_T @ self.T_left * self.Actuator + INNER_TRANS * self.current_T @ self.T_right * self.Actuator) / DELTA_Y ** 2
                 Z_delta_1 = Z_TRANS * ((self.previous_T - self.current_T) * self.Actuator) / (DELTA_Z) ** 2
-                T_next_1 = (X_delta_1 + Y_delta_1 + Z_delta_1 + Us_now_1 / Kt) * ALPHA * (t / TIME_SCALE) + self.current_T
+                T_next_1 = (X_delta_1 + Y_delta_1 + Z_delta_1 + Us_now_1 / Kt) * ALPHA_T * (t / TIME_SCALE) + self.current_T
 
                 # temperature diffusion - second layer
                 X_delta_2 = X_TRANS * ((self.T_upper + self.T_lower) @ self.previous_T) / DELTA_X ** 2
                 Y_delta_2 = Y_TRANS * (self.previous_T @ (self.T_left + self.T_right)) / DELTA_Y ** 2
                 Z_delta_2 = Z_TRANS * ((self.current_T - self.previous_T) * self.Actuator + (self.body - self.previous_T)) / (DELTA_Z) ** 2
-                T_next_2 = (X_delta_2 + Y_delta_2 + Z_delta_2 + (Uconv_previous + Us_now_2) / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T
+                T_next_2 = (X_delta_2 + Y_delta_2 + Z_delta_2 + (Uconv_previous + Us_now_2) / Kt) * ALPHA_T * (t / TIME_SCALE) + self.previous_T
 
                 # # add a third layer
                 X_delta_3 = X_TRANS * ((self.T_upper + self.T_lower) @ self.previous_T_2) / DELTA_X ** 2
                 Y_delta_3 = Y_TRANS * (self.previous_T_2 @ (self.T_left + self.T_right)) / DELTA_Y ** 2
                 Z_delta_3 = Z_TRANS * ((self.previous_T - self.previous_T_2) + (self.body - self.previous_T_2)) / (DELTA_Z) ** 2
-                T_next_3 = (X_delta_3 + Y_delta_3 + Z_delta_3 + Us_now_3 / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T_2
+                T_next_3 = (X_delta_3 + Y_delta_3 + Z_delta_3 + Us_now_3 / Kt) * ALPHA_T * (t / TIME_SCALE) + self.previous_T_2
 
             # update the temperature in one small cell / body 温度不变
             self.current_T = T_next_1.copy()
