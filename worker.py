@@ -3,29 +3,16 @@ import os
 import numpy as np
 
 
-def worker_agent(V):
+def worker_agent(P):
     thermal = Thermal()
     thermal.Reset()
-
-    V0 = V
 
     # init
     heat_loc = [INIT_X, INIT_Y, 0]  # STEP, STRIPE, LAYER
 
-    # solid laser power
-    P = 600  # changed in the physical world code
-
     stripe_count = 0
-    global_count = 0
 
     losses = []
-    global_counts = []
-
-    # 构建存储文件夹
-    current_folder = '.'
-    folder_name = str(INNER_TRANS) + "_" + str(INNER_TRANS_) + '_' + str(NOTE)
-    save_path = os.path.join(current_folder, folder_name)
-    os.makedirs(save_path, exist_ok=True)
 
     for layer in range(LAYER_HEIGHT):
 
@@ -45,74 +32,112 @@ def worker_agent(V):
             else:
                 right_bound = False
 
-            # heater is working
+            # Extract effective P
+            P_input = P[stripe_count]
+
+            # Heater is working
             for step in range(CELL_SIZE_X):
+
                 # Execute One Step
-                _, _, _ = thermal.Step(P, V0, heat_loc, True, right_bound=right_bound)
-                loss = loss_calculation(thermal.current_T, heat_loc)
+                _, _, _ = thermal.Step(P_input, VS, heat_loc, True, right_bound=right_bound)
+
+                if step - LOSS_INTERVAL * (step // LOSS_INTERVAL) == 0:
+                    loss = loss_calculation(thermal.current_T, thermal.Actuator, heat_loc)
+                else:
+                    loss = 0
 
                 # Update Location
                 heat_loc[0] += 1
                 step_count += 1
-                global_count += 1
 
                 losses.append(loss)
-
-                # # # additional assignments
-                # if display:
-                #
-                #     # if global_count % 10 == 0:
-                #     if global_count == 1420 or global_count == 1450 or global_count == 2850:
-                #
-                #         # np.save('physical-' + str(global_count) + "_1trans_0.1trans_30body", physical_data)
-                #         # np.save('simulation-' + str(global_count) + "_1trans_0.1trans_30body", simulation_data)
-                #         # np.save('simulation_previous-' + str(global_count) + "_1trans_0.1trans_30body", simulation_previous_data)
-                #
-                #         # name_ = str(global_count) + str(physical_data)
-                #         name_ = 'physical_data_' + str(global_count) + '.npy'
-                #         file_path = os.path.join(save_path,  name_)  # 创建每个数组的保存路径
-                #         np.save(file_path, physical_data)  # 保存数组
 
             # add the sleep time and wait for heater moving
             for step in range(TIME_SLEEP):
-
                 # Waiting the heater between stripe
-                _, _, _ = thermal.Step(P, V0, heat_loc, False, right_bound=right_bound)
-                loss = 0
+                _, _, _ = thermal.Step(P_input, VS, heat_loc, False, right_bound=right_bound)
 
-                global_count += 1
                 step_count += 1
-
-                losses.append(loss)
 
             # one stripe is done
             heat_loc[1] += INTERVAL_Y  # 加上层间的距离，由道宽以及重叠率决定
             stripe_count += 1
 
-            print('stripe_count', stripe_count)
-
         # one layer is done
         heat_loc[2] += 1
         thermal.reset()
 
-    return losses, global_counts, save_path
+    # sum up loss list
+    losses = sum(losses)
+
+    return losses
 
 
-# TODO: finish cost function
-def loss_calculation(physical_matrix, loc):
+def loss_calculation(physical_matrix, actuator, loc):
+    thermal_matrix = physical_matrix * actuator
 
-    # further development
-    location = [loc[0], loc[1]]
+    # Smart-scan loss - thermal equivalent 热均衡
+    if LOSS_EQUIVALENT:
 
-    # calculate the loss
-    if loc[1] <= 3 * STRIPE_NUM:
-        loss = physical_matrix[location[0], location[1]]
+        # find all non-zero element
+        non_zero_elements = thermal_matrix[thermal_matrix != 0]
+        list_length = len(non_zero_elements)
+
+        if non_zero_elements.size > 0:
+            average_thermal = np.mean(non_zero_elements)
+        else:
+            raise ValueError("Error: 选取的子矩阵中没有非零元素！")
+
+        upper = np.sum((non_zero_elements - average_thermal) ** 2)
+
+        lower = list_length * Tm ** 2
+        loss = np.sqrt(upper / lower)
+
+    # Li Sun loss - thermal gradient 热梯度
     else:
-        loss = 0
+
+        # 设定中心点
+        center_x, center_y = loc[0], loc[1]
+
+        # 计算边界，防止超出索引范围
+        x_start, x_end = max(center_x - LOSS_RADIUS, 0), min(center_x + LOSS_RADIUS + 1, thermal_matrix.shape[0])
+        y_start, y_end = max(center_y - LOSS_RADIUS, 0), min(center_y + LOSS_RADIUS + 1, thermal_matrix.shape[1])
+
+        # 提取子矩阵
+        sub_matrix = thermal_matrix[x_start:x_end, y_start:y_end]
+
+        # 获取非零元素的坐标
+        non_zero_indices = np.argwhere(sub_matrix != 0)
+
+        if non_zero_indices.size == 0:
+            raise ValueError("Error: 选取的子矩阵中没有非零元素！")
+
+        # 提取非零值
+        non_zero_values = sub_matrix[sub_matrix != 0]
+
+        # 获取最大最小值
+        max_val = np.max(non_zero_values)
+        min_val = np.min(non_zero_values)
+
+        # 找到最大值和最小值的索引（相对于子矩阵）
+        max_pos = tuple(non_zero_indices[np.argmax(non_zero_values)])
+        min_pos = tuple(non_zero_indices[np.argmin(non_zero_values)])
+        euclidean_dist = np.linalg.norm(np.array(max_pos) - np.array(min_pos))
+
+        if max_pos == min_pos:
+            raise ValueError("Error: 最大值与最小值的位置相同，无法计算有效的距离！")
+
+        loss = (max_val - min_val) / euclidean_dist
 
     return loss
 
 
+def Display(matrix):
+    plt.imshow(matrix)
+    plt.show()
+
+
 if __name__ == "__main__":
-    vector = np.random.uniform(V_MIN, V_MAX, 35)
+    vector = np.random.uniform(P_Min, P_Max, 35)
     cost = worker_agent(vector)
+    print("cost", cost)

@@ -31,7 +31,6 @@ def Calculate_MSE(path, display):
 
     # 构建存储文件夹
     current_folder = '.'
-
     folder_name = str(INNER_TRANS) + "_" + str(INNER_TRANS_) + '_' + str(NOTE)
     save_path = os.path.join(current_folder, folder_name)
     os.makedirs(save_path, exist_ok=True)

@@ -363,7 +363,7 @@ class Thermal():
             # # temperature diffusion - second layer
             # X_delta_2 = ((self.T_upper + self.T_lower) @ self.previous_T) / DELTA_X ** 2
             # Y_delta_2 = (self.previous_T @ (self.T_left + self.T_right)) / DELTA_Y ** 2
-            # Z_delta_2 = ((self.current_T - self.previous_T) * selff.Actuator + (self.body - self.previous_T)) / (DELTA_Z) ** 2
+            # Z_delta_2 = ((self.current_T - self.previous_T) * self.Actuator + (self.body - self.previous_T)) / (DELTA_Z) ** 2
             # T_next_2 = (X_delta_2 + Y_delta_2 + Z_delta_2 + Uconv_previous / Kt) * ALPHA * (t / TIME_SCALE) + self.previous_T
 
             # # update the temperature in one small cell

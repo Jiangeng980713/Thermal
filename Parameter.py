@@ -1,9 +1,17 @@
 # training parameter
-PARTICLE_NUM = 30  # 粒子数量
-EPISODE_NUM = 100  # 最大迭代次数
+PARTICLE_NUM = 20  # PSO 粒子数量
+THREAD_NUM = 10    # 运算线程数量
+EPISODE_NUM = 120  # 最大迭代次数
+LOSS_EQUIVALENT = True
+LOSS_RADIUS = 10
+LOSS_INTERVAL = 1
 
-
-
+# training hyperparameter
+ALPHA = 0.5  # 速度范围比例因子
+W_MAX = 0.9  # 初始惯性权重
+W_MIN = 0.4  # 最小惯性权重
+C1 = 1.5
+C2 = 1.5
 
 # simulation length and height
 SIMU_L = 0.03
@@ -42,8 +50,8 @@ P_Min = 400
 TIME_SLEEP = 58
 
 # require for further update
-V_MAX = 10E-3  # m/s -> 600 mm/min -> 10mm/s -> 20ms (0.2mm per cell) -> 50 fps
-V_MIN = 2.5E-3  # m/s -> 150 mm/min -> 2.5mm/s -> 80ms (0.2mm per cell) -> 12.5 fps
+# V_MAX = 10E-3  # m/s -> 600 mm/min -> 10mm/s -> 20ms (0.2mm per cell) -> 50 fps
+# V_MIN = 2.5E-3  # m/s -> 150 mm/min -> 2.5mm/s -> 80ms (0.2mm per cell) -> 12.5 fps
 
 # physical entity
 Tm = 2150  # melting temperature for 316L
@@ -65,9 +73,6 @@ VS = 6E-3  # m/s -> 360 mm/min
 # coverage speed
 t = SIMU_L / (VS * CELL_SIZE_X)  # 4E-2
 TIME_SCALE = 75  # 30+ is converged
-
-# optimizer for PSO
-THREAD_NUM = 12
 
 # hand-pick starters
 HEAT_STARTER = [157, 232, 307, 382, 457, 533, 608, 684, 756, 829, 903, 977, 1052, 1126, 1200, 1275, 1348, 1420, 1494, 1567, 1641, 1715, 1788, 1860, 1934, 2005, 2074, 2146, 2212, 2281, 2350, 2419, 2488, 2559, 2632, 2704]
