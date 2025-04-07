@@ -1,17 +1,19 @@
 # training parameter
 PARTICLE_NUM = 20  # PSO 粒子数量
 THREAD_NUM = 10    # 运算线程数量
-EPISODE_NUM = 120  # 最大迭代次数
+EPISODE_NUM = 180  # 最大迭代次数
 LOSS_EQUIVALENT = True
 LOSS_RADIUS = 10
 LOSS_INTERVAL = 1
 
 # training hyperparameter
-ALPHA = 0.5  # 速度范围比例因子
+ALPHA = 0.15  # 速度范围比例因子
 W_MAX = 0.9  # 初始惯性权重
 W_MIN = 0.4  # 最小惯性权重
-C1 = 1.5
-C2 = 1.5
+C1_MAX = 2.5
+C1_MIN = 0.5
+C2_MAX = 2.5
+C2_MIN = 0.5
 
 # simulation length and height
 SIMU_L = 0.03
@@ -33,9 +35,6 @@ INIT_X = 0
 INIT_Y = 5  # 5 in the real world, in matrix 5-1
 INTERVAL_X = 1  # distance between step
 INTERVAL_Y = 6  # distance between stripe
-
-""" further determination depends on optimization scene """
-# GRADIENT_LENGTH = 3   # gradient regions about the optimization
 
 # cell size
 DELTA_X = SIMU_L / CELL_SIZE_X

@@ -64,8 +64,6 @@ def pso(x_bound, v_bound, num_particles, max_iter, save_path):
     # fixed w parameter
     w_max = W_MAX     # (惯性权重)
     w_min = W_MIN     # (惯性权重)
-    c1 = C1     # 认知参数
-    c2 = C2     # 社会参数
 
     global_costs = []
 
@@ -78,8 +76,9 @@ def pso(x_bound, v_bound, num_particles, max_iter, save_path):
         w = w_max - (w_max - w_min) * (episode / max_iter)
 
         # dynamic c1 & c2
-        # c1 = 2.5 - (2.5 - 0.5) * (episode / max_iter)  # c1 从 2.5 线性减小到 0.5
-        # c2 = 0.5 + (2.5 - 0.5) * (episode / max_iter)  # c2 从 0.5 线性增大到 2.5
+
+        c1 = C1_MAX - (C1_MAX - C1_MIN) * (episode / max_iter)  # c1 从 2.5 线性减小到 0.5
+        c2 = C2_MIN + (C2_MAX - C2_MIN) * (episode / max_iter)  # c2 从 0.5 线性增大到 2.5
 
         time1 = time.time()
         with multiprocessing.Pool(processes=THREAD_NUM) as pool:  # start n threads for calculation
@@ -118,6 +117,7 @@ def pso(x_bound, v_bound, num_particles, max_iter, save_path):
 
         print("episode", episode)
         print('本次循环的推理时间为：', time2-time1)
+        print('本次损失函数为：', global_best_fitness)
 
     return global_best_position, global_best_fitness, global_costs
 
@@ -139,11 +139,14 @@ if __name__ == "__main__":
 
     # 记录文件夹
     current_folder = '.'
-    folder_name = str(ALPHA) + "_" + str(W_MAX) + '_' + str(W_MIN) + '_' + str(C1) + '_' + str(C2)
+    folder_name = 'ALPHA' + str(ALPHA) + "w" + str(W_MAX) + str(W_MIN) + 'c1' + str(C1_MAX) + str(C1_MIN) + 'c2' + str(C2_MAX) + str(C2_MIN)
     save_path = os.path.join(current_folder, folder_name)
     os.makedirs(save_path, exist_ok=True)
 
     best_position, best_fitness, global_costs = pso(x_bound, v_bound, num_particles, max_iter, save_path)
     print(f'Best position: {best_position}')
     print(f'Best fitness: {best_fitness}')
-    np.save('cost', global_costs)
+
+    name_ = 'cost_function'
+    file_path = os.path.join(save_path, name_)
+    np.save(file_path, global_costs)
