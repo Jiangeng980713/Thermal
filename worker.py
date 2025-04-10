@@ -14,16 +14,21 @@ def worker_agent(P):
 
     losses = []
 
+    body_stripe_total = []  # for a body layer equivalent
+
     for layer in range(LAYER_HEIGHT):
 
         # layer begin
         heat_loc[0], heat_loc[1] = INIT_X, INIT_Y
+
+        # multi_stripe_total = []       # for the inner layer equivalent
 
         for stripe in range(STRIPE_NUM):
 
             # stripe begin
             heat_loc[0] = 0
             step_count = 0
+            single_stripe_Ts = []
 
             # check whether last stripe boundary offset
             if stripe // (STRIPE_NUM - 1) == 1:
@@ -41,16 +46,20 @@ def worker_agent(P):
                 # Execute One Step
                 _, _, _ = thermal.Step(P_input, VS, heat_loc, True, right_bound=right_bound)
 
-                if step - LOSS_INTERVAL * (step // LOSS_INTERVAL) == 0:
-                    loss = loss_calculation(thermal.current_T, thermal.Actuator, heat_loc)
-                else:
-                    loss = 0
+                stripe_actuator = thermal.pick_up(heat_loc)
+
+                # print("stripe_num", stripe)
+                # if step == 150:
+                #     thermal.Display(stripe_actuator)
+
+                stripe_T = thermal.current_T * stripe_actuator
 
                 # Update Location
                 heat_loc[0] += 1
                 step_count += 1
 
-                losses.append(loss)
+                single_stripe_Ts.append(np.sum(stripe_T))
+                # print("single_stripe_Ts", len(single_stripe_Ts))
 
             # add the sleep time and wait for heater moving
             for step in range(TIME_SLEEP):
@@ -63,9 +72,25 @@ def worker_agent(P):
             heat_loc[1] += INTERVAL_Y  # 加上层间的距离，由道宽以及重叠率决定
             stripe_count += 1
 
+            # sum up stripe Temperature
+            single_stripe_total = np.sum(np.array(single_stripe_Ts))  # add up temperature accumulation in one layer
+
+            # record layer-wise stripe heat
+            # multi_stripe_total.append(single_stripe_total)
+
+            # record body-wise stripe heat
+            body_stripe_total.append(single_stripe_total)
+
         # one layer is done
+        # loss = loss_calculation_layer(multi_stripe_total)             # calculate the layer-wise reward
+        # losses.append(loss)
+
         heat_loc[2] += 1
         thermal.reset()
+
+    # one manufacturing is done
+    loss = loss_calculation_body(body_stripe_total)  # calculate the layer-wise reward
+    losses.append(loss)
 
     # sum up loss list
     losses = sum(losses)
@@ -73,63 +98,93 @@ def worker_agent(P):
     return losses
 
 
-def loss_calculation(physical_matrix, actuator, loc):
-    thermal_matrix = physical_matrix * actuator
+def loss_calculation_layer(Multiple_stripe_T):
+    Layer_average_T = sum(Multiple_stripe_T) / STRIPE_NUM
 
-    # Smart-scan loss - thermal equivalent 热均衡
-    if LOSS_EQUIVALENT:
+    stripe_loss = []
 
-        # find all non-zero element
-        non_zero_elements = thermal_matrix[thermal_matrix != 0]
-        list_length = len(non_zero_elements)
+    for i in range(STRIPE_NUM):
+        single_stripe_total = Multiple_stripe_T[i]
+        loss = (single_stripe_total - Layer_average_T) ** 2
+        stripe_loss.append(loss)
 
-        if non_zero_elements.size > 0:
-            average_thermal = np.mean(non_zero_elements)
-        else:
-            raise ValueError("Error: 选取的子矩阵中没有非零元素！")
+    layer_loss = (sum(stripe_loss) ** 0.5) / Tm
 
-        upper = np.sum((non_zero_elements - average_thermal) ** 2)
+    return layer_loss
 
-        lower = list_length * Tm ** 2
-        loss = np.sqrt(upper / lower)
 
-    # Li Sun loss - thermal gradient 热梯度
-    else:
+def loss_calculation_body(Multiple_stripe_T):
+    Layer_average_T = sum(Multiple_stripe_T) / STRIPE_NUM
 
-        # 设定中心点
-        center_x, center_y = loc[0], loc[1]
+    stripe_loss = []
 
-        # 计算边界，防止超出索引范围
-        x_start, x_end = max(center_x - LOSS_RADIUS, 0), min(center_x + LOSS_RADIUS + 1, thermal_matrix.shape[0])
-        y_start, y_end = max(center_y - LOSS_RADIUS, 0), min(center_y + LOSS_RADIUS + 1, thermal_matrix.shape[1])
+    for i in range(STRIPE_NUM * LAYER_HEIGHT):
+        single_stripe_total = Multiple_stripe_T[i]
+        loss = (single_stripe_total - Layer_average_T) ** 2
+        stripe_loss.append(loss)
 
-        # 提取子矩阵
-        sub_matrix = thermal_matrix[x_start:x_end, y_start:y_end]
+    layer_loss = (sum(stripe_loss) ** 0.5) / Tm
 
-        # 获取非零元素的坐标
-        non_zero_indices = np.argwhere(sub_matrix != 0)
+    return layer_loss
 
-        if non_zero_indices.size == 0:
-            raise ValueError("Error: 选取的子矩阵中没有非零元素！")
 
-        # 提取非零值
-        non_zero_values = sub_matrix[sub_matrix != 0]
-
-        # 获取最大最小值
-        max_val = np.max(non_zero_values)
-        min_val = np.min(non_zero_values)
-
-        # 找到最大值和最小值的索引（相对于子矩阵）
-        max_pos = tuple(non_zero_indices[np.argmax(non_zero_values)])
-        min_pos = tuple(non_zero_indices[np.argmin(non_zero_values)])
-        euclidean_dist = np.linalg.norm(np.array(max_pos) - np.array(min_pos))
-
-        if max_pos == min_pos:
-            raise ValueError("Error: 最大值与最小值的位置相同，无法计算有效的距离！")
-
-        loss = (max_val - min_val) / euclidean_dist
-
-    return loss
+# def loss_calculation(physical_matrix, actuator, loc):
+#     thermal_matrix = physical_matrix * actuator
+#
+#     # Smart-scan loss - thermal equivalent 热均衡
+#     if LOSS_EQUIVALENT:
+#
+#         # find all non-zero element
+#         non_zero_elements = thermal_matrix[thermal_matrix != 0]
+#         list_length = len(non_zero_elements)
+#
+#         if non_zero_elements.size > 0:
+#             average_thermal = np.mean(non_zero_elements)
+#         else:
+#             raise ValueError("Error: 选取的子矩阵中没有非零元素！")
+#
+#         upper = np.sum((non_zero_elements - average_thermal) ** 2)
+#
+#         lower = list_length * Tm ** 2
+#         loss = np.sqrt(upper / lower)
+#
+#     # Li Sun loss - thermal gradient 热梯度
+#     else:
+#
+#         # 设定中心点
+#         center_x, center_y = loc[0], loc[1]
+#
+#         # 计算边界，防止超出索引范围
+#         x_start, x_end = max(center_x - LOSS_RADIUS, 0), min(center_x + LOSS_RADIUS + 1, thermal_matrix.shape[0])
+#         y_start, y_end = max(center_y - LOSS_RADIUS, 0), min(center_y + LOSS_RADIUS + 1, thermal_matrix.shape[1])
+#
+#         # 提取子矩阵
+#         sub_matrix = thermal_matrix[x_start:x_end, y_start:y_end]
+#
+#         # 获取非零元素的坐标
+#         non_zero_indices = np.argwhere(sub_matrix != 0)
+#
+#         if non_zero_indices.size == 0:
+#             raise ValueError("Error: 选取的子矩阵中没有非零元素！")
+#
+#         # 提取非零值
+#         non_zero_values = sub_matrix[sub_matrix != 0]
+#
+#         # 获取最大最小值
+#         max_val = np.max(non_zero_values)
+#         min_val = np.min(non_zero_values)
+#
+#         # 找到最大值和最小值的索引（相对于子矩阵）
+#         max_pos = tuple(non_zero_indices[np.argmax(non_zero_values)])
+#         min_pos = tuple(non_zero_indices[np.argmin(non_zero_values)])
+#         euclidean_dist = np.linalg.norm(np.array(max_pos) - np.array(min_pos))
+#
+#         if max_pos == min_pos:
+#             raise ValueError("Error: 最大值与最小值的位置相同，无法计算有效的距离！")
+#
+#         loss = (max_val - min_val) / euclidean_dist
+#
+#     return loss
 
 
 def Display(matrix):

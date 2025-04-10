@@ -76,7 +76,6 @@ def pso(x_bound, v_bound, num_particles, max_iter, save_path):
         w = w_max - (w_max - w_min) * (episode / max_iter)
 
         # dynamic c1 & c2
-
         c1 = C1_MAX - (C1_MAX - C1_MIN) * (episode / max_iter)  # c1 从 2.5 线性减小到 0.5
         c2 = C2_MIN + (C2_MAX - C2_MIN) * (episode / max_iter)  # c2 从 0.5 线性增大到 2.5
 

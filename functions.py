@@ -227,6 +227,21 @@ class Thermal():
 
         return heat_matrix_layer_1, heat_matrix_layer_2, heat_matrix_layer_3
 
+    def pick_up(self, loc):
+
+        center_x = loc[1]
+        radius = HEATER_COLUMN // 2
+
+        # 计算圆覆盖到的列范围
+        x_min = max(0, center_x - radius)
+        x_max = min(CELL_SIZE_Y, center_x + radius + 1)
+
+        # 将这些列整列设置为 1
+        stripe_actuation = np.zeros((CELL_SIZE_X, CELL_SIZE_Y))
+        stripe_actuation[:, x_min:x_max] = 1
+
+        return stripe_actuation
+
     def Step(self, P, V, loc, heater_actuated, right_bound):
 
         Time_rate = V / self.Vs
