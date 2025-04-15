@@ -1,6 +1,7 @@
 from worker import *
 import multiprocessing
 import time
+import os
 
 
 class Particle:
@@ -37,7 +38,7 @@ class Particle:
 
 # REACT WITH SIMULATED MODEL -> Worker_agent
 def evaluate_particle(particle):
-    fitness = worker_agent(particle.position)
+    fitness, _ = worker_agent(particle.position)
     # print("particle" + str(particle.id) + "is done")
     return fitness, particle.id
 
@@ -138,7 +139,7 @@ if __name__ == "__main__":
 
     # 记录文件夹
     current_folder = '.'
-    folder_name = 'ALPHA' + str(ALPHA) + "w" + str(W_MAX) + str(W_MIN) + 'c1' + str(C1_MAX) + str(C1_MIN) + 'c2' + str(C2_MAX) + str(C2_MIN)
+    folder_name = 'ALPHA' + str(ALPHA) + '_' + "w" + str(W_MAX) + str(W_MIN) + '_' + 'c1' + str(C1_MAX) + str(C1_MIN) + '_' + 'c2' + str(C2_MAX) + str(C2_MIN) + '_' + '4-15'
     save_path = os.path.join(current_folder, folder_name)
     os.makedirs(save_path, exist_ok=True)
 

@@ -1,5 +1,4 @@
 from functions import *
-import os
 import numpy as np
 
 
@@ -89,13 +88,13 @@ def worker_agent(P):
         thermal.reset()
 
     # one manufacturing is done
-    loss = loss_calculation_body(body_stripe_total)  # calculate the layer-wise reward
+    loss, stripe_loss = loss_calculation_body(body_stripe_total)  # calculate the layer-wise reward
     losses.append(loss)
 
     # sum up loss list
     losses = sum(losses)
 
-    return losses
+    return losses, stripe_loss
 
 
 def loss_calculation_layer(Multiple_stripe_T):
@@ -114,7 +113,7 @@ def loss_calculation_layer(Multiple_stripe_T):
 
 
 def loss_calculation_body(Multiple_stripe_T):
-    Layer_average_T = sum(Multiple_stripe_T) / STRIPE_NUM
+    Layer_average_T = sum(Multiple_stripe_T) / STRIPE_NUM * LAYER_HEIGHT
 
     stripe_loss = []
 
@@ -123,9 +122,9 @@ def loss_calculation_body(Multiple_stripe_T):
         loss = (single_stripe_total - Layer_average_T) ** 2
         stripe_loss.append(loss)
 
-    layer_loss = (sum(stripe_loss) ** 0.5) / Tm
+    layer_loss = (sum(stripe_loss) ** 0.5) / (Tm ** 2)
 
-    return layer_loss
+    return layer_loss, stripe_loss
 
 
 # def loss_calculation(physical_matrix, actuator, loc):
