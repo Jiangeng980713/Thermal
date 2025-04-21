@@ -11,9 +11,7 @@ def worker_agent(P):
 
     stripe_count = 0
 
-    losses = []
-
-    body_stripe_total = []  # for a body layer equivalent
+    body_stripe_accumulation = []  # for a body layer equivalent
 
     for layer in range(LAYER_HEIGHT):
 
@@ -41,7 +39,6 @@ def worker_agent(P):
 
             # Heater is working
             for step in range(CELL_SIZE_X):
-
                 # Execute One Step
                 _, _, _ = thermal.Step(P_input, VS, heat_loc, True, right_bound=right_bound)
 
@@ -72,13 +69,13 @@ def worker_agent(P):
             stripe_count += 1
 
             # sum up stripe Temperature
-            single_stripe_total = np.sum(np.array(single_stripe_Ts))  # add up temperature accumulation in one layer
+            single_stripe_accumulation = np.sum(np.array(single_stripe_Ts))  # temperature accumulation in one layer
 
             # record layer-wise stripe heat
             # multi_stripe_total.append(single_stripe_total)
 
             # record body-wise stripe heat
-            body_stripe_total.append(single_stripe_total)
+            body_stripe_accumulation.append(single_stripe_accumulation)
 
         # one layer is done
         # loss = loss_calculation_layer(multi_stripe_total)             # calculate the layer-wise reward
@@ -88,43 +85,53 @@ def worker_agent(P):
         thermal.reset()
 
     # one manufacturing is done
-    loss, stripe_loss = loss_calculation_body(body_stripe_total)  # calculate the layer-wise reward
-    losses.append(loss)
+    global_loss, stripe_loss = loss_calculation_body(body_stripe_accumulation)  # calculate the global reward
 
-    # sum up loss list
-    losses = sum(losses)
+    # losses.append(loss)
+    #
+    # # sum up loss list
+    # losses = sum(losses)
 
-    return losses, stripe_loss
-
-
-def loss_calculation_layer(Multiple_stripe_T):
-    Layer_average_T = sum(Multiple_stripe_T) / STRIPE_NUM
-
-    stripe_loss = []
-
-    for i in range(STRIPE_NUM):
-        single_stripe_total = Multiple_stripe_T[i]
-        loss = (single_stripe_total - Layer_average_T) ** 2
-        stripe_loss.append(loss)
-
-    layer_loss = (sum(stripe_loss) ** 0.5) / Tm
-
-    return layer_loss
+    return global_loss, stripe_loss, body_stripe_accumulation
 
 
-def loss_calculation_body(Multiple_stripe_T):
-    Layer_average_T = sum(Multiple_stripe_T) / STRIPE_NUM * LAYER_HEIGHT
+def loss_calculation_body(stripe_Ts):
 
-    stripe_loss = []
+    # 通过每一道的热量积累，求出全局平均的道次热量积累
+    body_average_thermal = sum(stripe_Ts) / STRIPE_NUM * LAYER_HEIGHT
 
+    DEMAND_T = 0
+
+    single_loss_set = []
+
+    # calculate loss for each stripe
     for i in range(STRIPE_NUM * LAYER_HEIGHT):
-        single_stripe_total = Multiple_stripe_T[i]
-        loss = (single_stripe_total - Layer_average_T) ** 2
-        stripe_loss.append(loss)
 
-    layer_loss = (sum(stripe_loss) ** 0.5) / (Tm ** 2)
+        temp_thermal = stripe_Ts[i]
 
-    return layer_loss, stripe_loss
+        temp_loss = np.abs(temp_thermal - body_average_thermal) / Tm
+
+        single_loss_set.append(temp_loss)
+
+    global_loss = sum(single_loss_set)
+
+    return global_loss, single_loss_set
+
+
+# def loss_calculation_layer(Multiple_stripe_T):
+#     Layer_average_T = sum(Multiple_stripe_T) / STRIPE_NUM
+#     DEMAND_T = 0
+# 
+#     stripe_loss = []
+# 
+#     for i in range(STRIPE_NUM):
+#         single_stripe_total = Multiple_stripe_T[i]
+#         loss = (single_stripe_total - Layer_average_T) ** 2
+#         stripe_loss.append(loss)
+# 
+#     layer_loss = (sum(stripe_loss) ** 0.5) / Tm
+# 
+#     return layer_loss
 
 
 # def loss_calculation(physical_matrix, actuator, loc):
@@ -192,6 +199,11 @@ def Display(matrix):
 
 
 if __name__ == "__main__":
-    vector = np.random.uniform(P_Min, P_Max, 35)
-    cost = worker_agent(vector)
-    print("cost", cost)
+    # vector = np.random.uniform(P_Min, P_Max, 35)
+
+    vector = np.full((35,), 600)
+
+    loss, loss_distribution, thermal_distribution = worker_agent(vector)
+    print("loss", loss)
+    print("loss_distribution", loss_distribution)
+    print('thermal_distribution', thermal_distribution)

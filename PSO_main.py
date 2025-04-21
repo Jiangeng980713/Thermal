@@ -38,8 +38,7 @@ class Particle:
 
 # REACT WITH SIMULATED MODEL -> Worker_agent
 def evaluate_particle(particle):
-    fitness, _ = worker_agent(particle.position)
-    # print("particle" + str(particle.id) + "is done")
+    fitness, _, _ = worker_agent(particle.position)
     return fitness, particle.id
 
 
@@ -47,11 +46,13 @@ def pso(x_bound, v_bound, num_particles, max_iter, save_path):
 
     load = False
 
-    # 是否是随机生成位置开局，是的话会在 particle 中生成随机 vector
-    if load:
-        input_vector = np.load('input.npy')   # 换成需要导入的 input tensor
-    else:
-        input_vector = [np.random.uniform(P_Min, P_Max, LAYER_HEIGHT * STRIPE_NUM)]
+    # # 是否是随机生成位置开局，是的话会在 particle 中生成随机 vector
+    # if load:
+    #     input_vector = np.load('input.npy')   # 换成需要导入的 input tensor
+    # else:
+    #     input_vector = [np.random.uniform(P_Min, P_Max, LAYER_HEIGHT * STRIPE_NUM)]   # 当前开始的位置是随机
+
+    input_vector = np.full((STRIPE_NUM*LAYER_HEIGHT,), 800)   # 800 W for starter
 
     dim = LAYER_HEIGHT * STRIPE_NUM  # Position 对应的维度，就是优化项目的维度，V 有多少维度
     particles = [Particle(i, dim, x_bound, v_bound, load, input_vector) for i in range(num_particles)]
@@ -134,6 +135,7 @@ if __name__ == "__main__":
 
     # 粒子数量
     num_particles = PARTICLE_NUM
+
     # 最大迭代次数
     max_iter = EPISODE_NUM
 
@@ -144,9 +146,14 @@ if __name__ == "__main__":
     os.makedirs(save_path, exist_ok=True)
 
     best_position, best_fitness, global_costs = pso(x_bound, v_bound, num_particles, max_iter, save_path)
+
     print(f'Best position: {best_position}')
     print(f'Best fitness: {best_fitness}')
 
     name_ = 'cost_function'
     file_path = os.path.join(save_path, name_)
     np.save(file_path, global_costs)
+
+    name_ = 'best_position'
+    file_path = os.path.join(save_path, name_)
+    np.save(file_path, best_position)
