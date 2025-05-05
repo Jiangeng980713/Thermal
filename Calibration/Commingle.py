@@ -4,6 +4,7 @@ import cv2
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+from Thermal.Parameter import *
 
 
 def Calculate_MSE(path, display):
@@ -332,6 +333,7 @@ if __name__ == "__main__":
     with open(file_path, 'w') as f:
         f.write(','.join(map(str, global_counts)))
 
+    # record parameter information
     py_file_path = "../Parameter.py"
     txt_file_path = os.path.join(save_path, 'Parameter.txt')
 
@@ -342,9 +344,3 @@ if __name__ == "__main__":
     # 将内容写入 .txt 文件
     with open(txt_file_path, "w") as txt_file:
         txt_file.write(content)
-
-    # with open('physical.txt', 'w') as f:
-    #     f.write(','.join(map(str, high_reals)))
-    #
-    # with open('simulation.txt', 'w') as f:
-    #     f.write(','.join(map(str, high_simus)))

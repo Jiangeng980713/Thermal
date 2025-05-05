@@ -39,6 +39,7 @@ def worker_agent(P):
 
             # Heater is working
             for step in range(CELL_SIZE_X):
+
                 # Execute One Step
                 _, _, _ = thermal.Step(P_input, VS, heat_loc, True, right_bound=right_bound)
 
@@ -97,29 +98,21 @@ def worker_agent(P):
 
 def loss_calculation_body(stripe_Ts):
 
-    # 通过每一道的热量积累，求出全局平均的道次热量积累
-    body_average_thermal = sum(stripe_Ts) / STRIPE_NUM * LAYER_HEIGHT
+    body_average_thermal = sum(stripe_Ts) / (STRIPE_NUM * LAYER_HEIGHT)
 
-    DEMAND_T = 0
+    # print('body_average_thermal', body_average_thermal)
 
-    single_loss_set = []
+    loss_per = [T - body_average_thermal / body_average_thermal for T in stripe_Ts[:STRIPE_NUM * LAYER_HEIGHT]]
 
-    # calculate loss for each stripe
-    for i in range(STRIPE_NUM * LAYER_HEIGHT):
+    global_loss = np.var(loss_per) ** 0.5
 
-        temp_thermal = stripe_Ts[i]
+    # np.save('worker_loss_per', loss_per)
 
-        temp_loss = np.abs(temp_thermal - body_average_thermal) / Tm
-
-        single_loss_set.append(temp_loss)
-
-    global_loss = sum(single_loss_set)
-
-    return global_loss, single_loss_set
+    return global_loss, loss_per
 
 
 # def loss_calculation_layer(Multiple_stripe_T):
-#     Layer_average_T = sum(Multiple_stripe_T) / STRIPE_NUM
+#     Layer_average_T = sum(Multiple_stripe_T) / (STRIPE_NUM * LAYER_HEIGHT)
 #     DEMAND_T = 0
 # 
 #     stripe_loss = []
@@ -203,7 +196,7 @@ if __name__ == "__main__":
 
     vector = np.full((35,), 600)
 
-    loss, loss_distribution, thermal_distribution = worker_agent(vector)
+    loss, loss_per, thermal_distribution = worker_agent(vector)
     print("loss", loss)
-    print("loss_distribution", loss_distribution)
+    print("loss_distribution", loss_per)
     print('thermal_distribution', thermal_distribution)
