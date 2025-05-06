@@ -102,7 +102,7 @@ def loss_calculation_body(stripe_Ts):
 
     # print('body_average_thermal', body_average_thermal)
 
-    loss_per = [T - body_average_thermal / body_average_thermal for T in stripe_Ts[:STRIPE_NUM * LAYER_HEIGHT]]
+    loss_per = [(T - body_average_thermal) / body_average_thermal for T in stripe_Ts[:STRIPE_NUM * LAYER_HEIGHT]]
 
     global_loss = np.var(loss_per) ** 0.5
 
@@ -186,17 +186,17 @@ def loss_calculation_body(stripe_Ts):
 #     return loss
 
 
-def Display(matrix):
-    plt.imshow(matrix)
-    plt.show()
-
-
 if __name__ == "__main__":
+
     # vector = np.random.uniform(P_Min, P_Max, 35)
 
-    vector = np.full((35,), 600)
+    input = 600
+    vector = np.full((35,), input)
 
     loss, loss_per, thermal_distribution = worker_agent(vector)
+
     print("loss", loss)
     print("loss_distribution", loss_per)
     print('thermal_distribution', thermal_distribution)
+
+    np.save('temp_', loss_per)

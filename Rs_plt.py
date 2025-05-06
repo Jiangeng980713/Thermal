@@ -5,60 +5,48 @@ import numpy as np
 def data_treat(name, scale):
     percentage = np.load(name) * scale
     percentage[:6] = -percentage[:6]
-    offset = np.average(percentage)
-    percentages = percentage - offset
 
-    variance = np.var(np.array(percentages))
+    offset = np.average(percentage)
+    percentage = percentage - offset
+
+    indices = np.arange(len(percentage))
+    target_indices_4 = indices[indices % 7 == 3]
+    target_indices_5 = indices[indices % 7 == 4]
+    target_indices_6 = indices[indices % 7 == 5]
+
+    slope_45 = (percentage[target_indices_5] - percentage[target_indices_4]) / (target_indices_5 - target_indices_4)
+    slope_56 = (percentage[target_indices_6] - percentage[target_indices_5]) / (target_indices_6 - target_indices_5)
+
+    slope_67 = (slope_45 + slope_56)/2
+
+    target_indices_7 = indices[indices % 7 == 6]
+
+    percentage[target_indices_7] = percentage[target_indices_6] + slope_67
+
+    variance = np.var(np.array(percentage))
     SD = np.sqrt(variance)
     print(name, SD)
-    return percentages
+
+    return percentage
 
 
-percentages = data_treat('percentages-400.npy', scale=1.4)
-percentages_1 = data_treat('percentages-500.npy', scale=1.35)
-percentages_2 = data_treat('percentages-600.npy', scale=1.25)
-percentages_3 = data_treat('percentages-700.npy', scale=1.2)
-percentages_4 = data_treat('percentages-800.npy', scale=1.1)
-
-
-# import matplotlib.pyplot as plt
-# import numpy as np
-
-
-# data = [percentages, percentages_1, percentages_2, percentages_3, percentages_4]
-# labels = ['Input 1', 'Input 2', 'Input 3', 'Input 4', 'Input 5']
-# colors = ['skyblue', 'orange', 'green', 'red', 'purple']
-#
-# # 横轴位置
-# x = np.arange(len(percentages_1))  # 假设每组有5个值
-# bar_width = 0.15  # 柱子的宽度
-#
-# # 绘图
-# for i, (group, color) in enumerate(zip(data, colors)):
-#     plt.bar(x + i * bar_width, group, width=bar_width, label=labels[i], color=color)
-#
-# # 设置 x 轴刻度居中
-# plt.xticks(x + bar_width * 2, [str(i) for i in x])  # 中心偏移量：bar_width * (num_groups / 2)
-#
-# # 添加标签
-# plt.xlabel('Index (unit: 1)')
-# plt.ylabel('Percentage (unit: 1)')
-# plt.legend()
-# plt.title('Grouped Bar Chart for 5 Inputs')
-#
-# # 显示图形
-# plt.show()
+percentages = data_treat('percentages-400.npy', scale=1.5)
+percentages_1 = data_treat('percentages-500.npy', scale=1.45)
+percentages_2 = data_treat('percentages-600.npy', scale=1.4)
+percentages_3 = data_treat('percentages-700.npy', scale=1.3)
+percentages_4 = data_treat('percentages-800.npy', scale=1.3)
 
 
 # x 坐标索引
 x = np.arange(len(percentages_1))
 
 # 绘制每一组折线图
+plt.plot(x, percentages, marker='x', label='Input 0')
 plt.plot(x, percentages_1, marker='o', label='Input 1')
 plt.plot(x, percentages_2, marker='s', label='Input 2')
 plt.plot(x, percentages_3, marker='^', label='Input 3')
 plt.plot(x, percentages_4, marker='d', label='Input 4')
-plt.plot(x, percentages, marker='x', label='Input 5')
+
 
 # 设置坐标轴和图例
 plt.xticks(ticks=x, labels=[str(i) for i in x])
