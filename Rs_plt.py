@@ -27,18 +27,20 @@ def data_treat(name, scale):
     SD = np.sqrt(variance)
     print(name, SD)
 
-    return percentage
+    return percentage, SD
 
 
-percentages = data_treat('percentages-400.npy', scale=1.5)
-percentages_1 = data_treat('percentages-500.npy', scale=1.45)
-percentages_2 = data_treat('percentages-600.npy', scale=1.4)
-percentages_3 = data_treat('percentages-700.npy', scale=1.3)
-percentages_4 = data_treat('percentages-800.npy', scale=1.3)
+percentages, SD = data_treat('percentages-400.npy', scale=1.5)
+percentages_1, SD_1 = data_treat('percentages-500.npy', scale=1.45)
+percentages_2, SD_2 = data_treat('percentages-600.npy', scale=1.4)
+percentages_3, SD_3 = data_treat('percentages-700.npy', scale=1.3)
+percentages_4, SD_4 = data_treat('percentages-800.npy', scale=1.3)
 
 
 # x 坐标索引
 x = np.arange(len(percentages_1))
+
+plt.figure(figsize=(12, 6))  # 先设置图像大小
 
 # 绘制每一组折线图
 plt.plot(x, percentages, marker='x', label='Input 0')
@@ -46,17 +48,25 @@ plt.plot(x, percentages_1, marker='o', label='Input 1')
 plt.plot(x, percentages_2, marker='s', label='Input 2')
 plt.plot(x, percentages_3, marker='^', label='Input 3')
 plt.plot(x, percentages_4, marker='d', label='Input 4')
+plt.show()
 
 
-# 设置坐标轴和图例
-plt.xticks(ticks=x, labels=[str(i) for i in x])
-plt.xlabel('Index (unit: 1)')
-plt.ylabel('Percentage (unit: 1)')
-# plt.ylim(-0.35, 0.35)  # 设置 y 轴范围
-plt.title('Trend of 5 Input Curves')
-plt.legend()
+# 柱状图 plt
+
+# 数据
+labels = ['400', '500', '600', '700', '800']
+sd_values = [SD, SD_1, SD_2, SD_3, SD_4]
+
+# 绘图
+plt.bar(labels, sd_values, color='skyblue')
+
+# 添加标签和标题
+plt.xlabel('Input Power (W)')
+plt.ylabel('Standard Deviation')
+plt.title('Standard Deviation vs Input Power')
 
 # 显示图形
+plt.grid(True, axis='y', linestyle='--', alpha=0.6)
 plt.show()
 
 
