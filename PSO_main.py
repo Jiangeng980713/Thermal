@@ -4,7 +4,6 @@ import time
 import os
 import datetime
 
-
 class Particle:
     def __init__(self, particle_id, dim, x_bound, v_bound, resume, input_vector):
 
@@ -186,7 +185,7 @@ if __name__ == "__main__":
 
     # save file
     current_folder = '.'
-    today_date = datetime.today().strftime('%Y-%m-%d')
+    today_date = datetime.datetime.today().strftime('%Y-%m-%d')
     folder_name = 'ALPHA' + str(ALPHA) + '_' + "w" + str(W_MAX) + str(W_MIN) + '_' + 'c1' + str(C1_MAX) + str(C1_MIN) + '_' + 'c2' + str(C2_MAX) + str(C2_MIN) + '_' + today_date
     save_path = os.path.join(current_folder, folder_name)
     os.makedirs(save_path, exist_ok=True)
