@@ -7,42 +7,130 @@ import numpy as np
 from Parameter import *
 import pickle
 
+# 每次运行之前注意 resume—checkpoint
+# 每次运行之前注意 NOTE 需要改进内容
 
-def Calculate_MSE(path, display):
+def Calculate_MSE(path, display, resume_checkpoint=None, new_NOTE_dir=None, resume_NOTE_dir=None):
 
-    thermal = Thermal()
-    thermal.Reset_start()
+    V0 = VS
+    P = 600
 
-    V0 = VS  # solid input speed -> constant speed for calibration (240 mm/min, 360 mm/min, 480 mm/min)
-
-    # init
-    heat_loc = [INIT_X, INIT_Y, 0]  # STEP, STRIPE, LAYER
-
-    # solid laser power
-    P = 600  # changed in the physical world code
-
-    stripe_count = 0
-    global_count = 0
-
-    mses = []
-    global_counts = []
-    high_reals = []
-    high_simus = []
-
-    csv_files = sorted([f for f in os.listdir(path) if f.endswith('.csv')])
-
-    # 构建存储文件夹
+    # 新模型自己的存储文件夹
     current_folder = '.'
-    folder_name = str(INNER_TRANS) + "_" + str(INNER_TRANS_) + '_' + str(NOTE)
-    save_path = os.path.join(current_folder, folder_name)
+    save_path = os.path.join(current_folder, str(new_NOTE_dir))
     os.makedirs(save_path, exist_ok=True)
 
-    for layer in range(LAYER_HEIGHT):
+    # 新模型自己的checkpoint文件夹
+    checkpoint_path = os.path.join(save_path, "checkpoints")
+    os.makedirs(checkpoint_path, exist_ok=True)
 
-        # layer begin
-        heat_loc[0], heat_loc[1] = INIT_X, INIT_Y
+    # =====================================================================
+    #                                                临时：Checkpoint准确性验证
+    # =====================================================================
 
-        for stripe in range(STRIPE_NUM):
+    validation_path = os.path.join(".", resume_NOTE_dir, "checkpoints")
+
+    # ==================================================================================================================
+    #                                               是否从checkpoint恢复
+    # ==================================================================================================================
+
+    if resume_checkpoint is None:
+        checkpoint = None
+
+    else:
+        old_checkpoint_path = os.path.join(current_folder, str(resume_NOTE_dir), "checkpoints")
+        checkpoint_name = os.path.join(old_checkpoint_path, resume_checkpoint)
+        checkpoint = load_checkpoint(checkpoint_name)
+
+        if checkpoint is None:
+            raise FileNotFoundError(f"Checkpoint not found: {checkpoint_name}")
+
+    # ==================================================================================================================
+    #                                               checkpoint 读取
+    # ==================================================================================================================
+
+    if checkpoint is None:
+
+        thermal = Thermal()
+        thermal.Reset_start()
+
+        heat_loc = [INIT_X, INIT_Y, 0]
+
+        stripe_count = 0
+        global_count = 0
+
+        mses = []
+        global_counts = []
+        high_reals = []
+        high_simus = []
+
+        csv_files = sorted([f for f in os.listdir(path) if f.endswith('.csv')])
+
+        start_layer = 0
+        start_stripe = 0
+
+    else:
+
+        thermal = checkpoint["thermal"]
+        heat_loc = checkpoint["heat_loc"]
+        stripe_count = checkpoint["stripe_count"]
+        global_count = checkpoint["global_count"]
+        mses = checkpoint["mses"]
+        global_counts = checkpoint["global_counts"]
+        high_reals = checkpoint["high_reals"]
+        high_simus = checkpoint["high_simus"]
+        csv_files = checkpoint["csv_files"]
+        start_layer = checkpoint["layer"]
+        start_stripe = checkpoint["stripe"]
+
+        if not 0 <= start_stripe <= STRIPE_NUM:
+            raise ValueError(f"Unexpected start_stripe: {start_stripe}")
+
+        if not 0 <= start_layer < LAYER_HEIGHT:
+            raise ValueError(f"Unexpected start_layer: {start_layer}")
+
+        if start_stripe == STRIPE_NUM:
+
+            # ★ 改进：如果后面还有下一层
+            if start_layer + 1 < LAYER_HEIGHT:
+
+                heat_loc[2] += 1
+                thermal.reset()
+
+                heat_loc[0] = INIT_X
+                heat_loc[1] = INIT_Y
+
+                start_layer += 1
+                start_stripe = 0
+
+            # ★ 改进：如果已经是最后一层最后一个stripe
+            else:
+                start_layer = LAYER_HEIGHT
+                start_stripe = 0
+
+        print("Resume from:" + checkpoint_name)
+        print("layer =", start_layer)
+        print("stripe =", start_stripe)
+        print("global_count =", global_count)
+
+    # ==================================================================================================================
+    #                                                   开始计算
+    # ==================================================================================================================
+
+    for layer in range(start_layer, LAYER_HEIGHT):
+
+        # 当checkpoint有东西（开始读一些东西）而且 layer = start_layer（从最开始层开始读）-》上面已经给 heat_loc 一个旧坐标，不需要归零
+        if checkpoint is not None and layer == start_layer:
+            pass
+        else:   # 否则开始归零
+            heat_loc[0], heat_loc[1] = INIT_X, INIT_Y
+
+        if layer == start_layer:
+            stripe_begin = start_stripe
+        else:
+            stripe_begin = 0
+
+        for stripe in range(stripe_begin, STRIPE_NUM):
 
             # stripe begin
             heat_loc[0] = 0
@@ -56,7 +144,9 @@ def Calculate_MSE(path, display):
             heat_fps = Balance_FPS(CELL_SIZE_X, heat_length)
             wait_fps = Balance_FPS(TIME_SLEEP, wait_length)
 
-            # check whether last stripe boundary offset
+########################################################################################################################
+
+            # check whether last stripe boundary offset    # TODO：右侧不对的问题需要进行解决
             if stripe // (STRIPE_NUM - 1) == 1:
 
                 right_bound = RIGHT_BOUND
@@ -66,20 +156,20 @@ def Calculate_MSE(path, display):
                 right_bound = False
                 # print(stripe // (STRIPE_NUM - 1), right_bound)
 
+########################################################################################################################
             # heater is working
             for step in range(CELL_SIZE_X):
 
                 # calculate the global step number
                 global_count += 1
 
-                # TODO: Execute One Step
                 thermal.Step(P, V0, heat_loc, True, right_bound=right_bound)
 
                 # if global_count > 100:
                 #     Display(thermal.current_T)
 
-                if 100 < global_count < 200 and global_count % 10 == 0:
-                    np.save(f"thermal_T_{global_count}.npy", thermal.current_T)
+                # if 100 < global_count < 200 and global_count % 10 == 0:
+                #     np.save(f"thermal_T_{global_count}.npy", thermal.current_T)
 
                 # calculate the thermal distribution
                 simulation_data = thermal.current_T
@@ -204,11 +294,93 @@ def Calculate_MSE(path, display):
             stripe_count += 1
             print('stripe_count', stripe_count)
 
+            ############################################ 每一个 stripe 都进行一个保存 #####################################
+                                                        # 临时加入validation的功能
+            ############################################ 每一个 stripe 都进行一个保存 #####################################
+
+            # ==================== 每个stripe验证 ====================
+            validation_name = f"checkpoint_{stripe_count:03d}_L{layer + 1}_S{stripe + 1}.pkl"
+            validation_checkpoint = load_checkpoint(os.path.join(validation_path, validation_name))
+
+            if validation_checkpoint is None:
+                raise FileNotFoundError(f"Validation checkpoint not found: {validation_name}")
+
+            cp = validation_checkpoint
+            cp_T = cp["thermal"]
+
+            print(f"\n========== Validation: {validation_name} ==========")
+            print("current_T    :", np.array_equal(thermal.current_T, cp_T.current_T))
+            print("previous_T   :", np.array_equal(thermal.previous_T, cp_T.previous_T))
+            print("Actuator     :", np.array_equal(thermal.Actuator, cp_T.Actuator))
+            print("body         :", np.array_equal(thermal.body, cp_T.body))
+            print("heat_loc     :", heat_loc == cp["heat_loc"], heat_loc, cp["heat_loc"])
+            print("layer        :", layer == cp["layer"], layer, cp["layer"])
+            print("stripe       :", stripe + 1 == cp["stripe"], stripe + 1, cp["stripe"])
+            print("stripe_count :", stripe_count == cp["stripe_count"], stripe_count, cp["stripe_count"])
+            print("global_count :", global_count == cp["global_count"], global_count, cp["global_count"])
+            print("csv_files    :", csv_files == cp["csv_files"])
+            print("max T error  :", np.max(np.abs(thermal.current_T - cp_T.current_T)))
+
+            all_same = (
+                    np.array_equal(thermal.current_T, cp_T.current_T)
+                    and np.array_equal(thermal.previous_T, cp_T.previous_T)
+                    and np.array_equal(thermal.Actuator, cp_T.Actuator)
+                    and np.array_equal(thermal.body, cp_T.body)
+                    and heat_loc == cp["heat_loc"]
+                    and stripe + 1 == cp["stripe"]
+                    and stripe_count == cp["stripe_count"]
+                    and global_count == cp["global_count"]
+                    and csv_files == cp["csv_files"]
+            )
+
+            print("RESULT       :", "PASS" if all_same else "FAIL")
+
+            ############################################ 每一个 stripe 都进行一个保存 #####################################
+            next_stripe = stripe + 1
+
+            # ★ 改进：去掉 if next_stripe < STRIPE_NUM
+            # 每一条stripe完成后都保存，包括S7
+            checkpoint_data = {
+                "thermal": thermal,
+                "layer": layer,
+                # ★ 改进：这里仍然保存“下一条需要计算的stripe
+                "stripe": next_stripe,
+                "global_count": global_count,
+                "stripe_count": stripe_count,
+                "heat_loc": heat_loc.copy(),
+                "csv_files": csv_files.copy(),
+                "mses": mses.copy(),
+                "global_counts": global_counts.copy(),
+                "high_reals": high_reals.copy(),
+                "high_simus": high_simus.copy()
+            }
+
+            checkpoint_name = os.path.join(checkpoint_path, f"checkpoint_{stripe_count:03d}_L{layer + 1}_S{stripe + 1}.pkl")
+            save_checkpoint(checkpoint_data, checkpoint_name)
+            print('stripe', stripe)
+            print('工作了5')
+            ############################################ 每一个 stripe 都进行一个保存 #####################################
+
         # one layer is done
         heat_loc[2] += 1
         thermal.reset()
 
     return mses, global_counts, high_reals, high_simus, save_path
+
+
+def save_checkpoint(data, checkpoint_name):
+    with open(checkpoint_name, "wb") as f:
+        pickle.dump(data, f)
+
+    print("Checkpoint saved:", checkpoint_name)
+
+
+def load_checkpoint(checkpoint_name):
+    if os.path.exists(checkpoint_name):
+        with open(checkpoint_name, "rb") as f:
+            return pickle.load(f)
+
+    return None
 
 
 # 均方误差比率
@@ -324,11 +496,20 @@ if __name__ == "__main__":
     # find the path
     path = "D:\\test_data\\csv"
     time1 = time.time()
-    display = True
+    display = False
 
-    mses, global_counts, high_reals, high_simus, save_path = Calculate_MSE(path, display)
+    # 老的文件夹放到哪里
+    resume_NOTE_dir = "FULL_RIGHT_BOUND_DOUBLE_LAYER_NEW_MSE"
+
+    # checkpoint的名字
+    resume_checkpoint = None
+
+    # 新的文件夹位置
+    new_NOTE_dir = "VALIDATION"
+
+    mses, global_counts, high_reals, high_simus, save_path = Calculate_MSE(path, display, resume_checkpoint, new_NOTE_dir, resume_NOTE_dir)
     time2 = time.time()
-    print('time', time1-time2)
+    print('time', time2-time1)
 
     # record mses
     file_path = os.path.join(save_path, 'mses.txt')
