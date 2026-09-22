@@ -2,6 +2,7 @@
 PARTICLE_NUM = 20  # PSO 粒子数量
 THREAD_NUM = 10    # 运算线程数量
 EPISODE_NUM = 180  # 最大迭代次数
+
 LOSS_EQUIVALENT = True
 LOSS_RADIUS = 10
 LOSS_INTERVAL = 1
@@ -19,9 +20,14 @@ C2_MIN = 0.5
 SIMU_L = 0.035
 SIMU_W = 0.0092
 SIMU_H = 0.005
+
+# Geometry deviation in the layer
+Virtual_Layer = 4
+Available_LAYER_Num = 2
+
+# geometry number
 LAYER_HEIGHT = 5  # length of height
 STRIPE_NUM = 7
-MIDDLE_LAYER = 3
 
 # cell size 0.2mm / cell
 CELL_SIZE_X = 175
@@ -39,7 +45,7 @@ INTERVAL_Y = 6  # distance between stripe
 # cell size
 DELTA_X = SIMU_L / CELL_SIZE_X
 DELTA_Y = SIMU_W / CELL_SIZE_Y
-DELTA_Z = SIMU_H / LAYER_HEIGHT
+DELTA_Z = SIMU_H / (LAYER_HEIGHT * Virtual_Layer)
 
 P_START = 600
 P_Max = 800
@@ -61,17 +67,21 @@ LAMDA = 0.5
 Rb = 0.0012  # Rb 越小，温度越高
 SIGMA_1 = 2.5
 SIGMA_2 = 1.2
+MELT_DEPTH = 0.0015   # 单位长度为 m
+Heater_DEPTH = int((MELT_DEPTH / (SIMU_H / LAYER_HEIGHT)) * Virtual_Layer)   # TODO：如果改层高和虚拟层数，需要看一看
 
 # parameters for materials
 Kt = 22.5  # W/mK
 h = 25  # W/(m^2 * K)
 ALPHA_T = 5.632E-6  # m^2/s
+EPSILON = 5.670374419E-8
+SIGMA = 0.36     # TODO：得看看具体是多少，如何标定一下这个数字
 
 VS = 6E-3  # m/s -> 360 mm/min
 
 # coverage speed
 t = SIMU_L / (VS * CELL_SIZE_X)  # 4E-2
-TIME_SCALE = 75  # 30+ is converged
+TIME_SCALE = 75  # 30+ is converged   # TODO: additional testing - to enhance the computational speed under convergence
 
 # hand-pick starters
 HEAT_STARTER = [157, 232, 307, 382, 457, 533, 608, 684, 756, 829, 903, 977, 1052, 1126, 1200, 1275, 1348, 1420, 1494, 1567, 1641, 1715, 1788, 1860, 1934, 2005, 2074, 2146, 2212, 2281, 2350, 2419, 2488, 2559, 2632, 2704]
@@ -80,7 +90,7 @@ COLD_STARTER = [211, 287, 362, 437, 513, 587, 663, 738, 809, 883, 957, 1032, 110
 # calibration parameter
 X_TRANS = 1
 Y_TRANS = 1
-Z_TRANS = 0.1
+Z_TRANS = 1   # TODO：改进了一下模型，先不要scale掉这个传导
 
 # inner layer offset
 INNER_TRANS = 0.05
