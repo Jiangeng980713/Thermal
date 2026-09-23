@@ -24,12 +24,6 @@ def Calculate_MSE(path, display, resume_checkpoint=None, new_NOTE_dir=None, resu
     checkpoint_path = os.path.join(save_path, "checkpoints")
     os.makedirs(checkpoint_path, exist_ok=True)
 
-    # =====================================================================
-    #                                                临时：Checkpoint准确性验证
-    # =====================================================================
-
-    validation_path = os.path.join(".", resume_NOTE_dir, "checkpoints")
-
     # ==================================================================================================================
     #                                               是否从checkpoint恢复
     # ==================================================================================================================
@@ -293,47 +287,6 @@ def Calculate_MSE(path, display, resume_checkpoint=None, new_NOTE_dir=None, resu
             heat_loc[1] += INTERVAL_Y  # 加上层间的距离，由道宽以及重叠率决定
             stripe_count += 1
             print('stripe_count', stripe_count)
-
-            ############################################ 每一个 stripe 都进行一个保存 #####################################
-                                                        # 临时加入validation的功能
-            ############################################ 每一个 stripe 都进行一个保存 #####################################
-
-            # ==================== 每个stripe验证 ====================
-            validation_name = f"checkpoint_{stripe_count:03d}_L{layer + 1}_S{stripe + 1}.pkl"
-            validation_checkpoint = load_checkpoint(os.path.join(validation_path, validation_name))
-
-            if validation_checkpoint is None:
-                raise FileNotFoundError(f"Validation checkpoint not found: {validation_name}")
-
-            cp = validation_checkpoint
-            cp_T = cp["thermal"]
-
-            print(f"\n========== Validation: {validation_name} ==========")
-            print("current_T    :", np.array_equal(thermal.current_T, cp_T.current_T))
-            print("previous_T   :", np.array_equal(thermal.previous_T, cp_T.previous_T))
-            print("Actuator     :", np.array_equal(thermal.Actuator, cp_T.Actuator))
-            print("body         :", np.array_equal(thermal.body, cp_T.body))
-            print("heat_loc     :", heat_loc == cp["heat_loc"], heat_loc, cp["heat_loc"])
-            print("layer        :", layer == cp["layer"], layer, cp["layer"])
-            print("stripe       :", stripe + 1 == cp["stripe"], stripe + 1, cp["stripe"])
-            print("stripe_count :", stripe_count == cp["stripe_count"], stripe_count, cp["stripe_count"])
-            print("global_count :", global_count == cp["global_count"], global_count, cp["global_count"])
-            print("csv_files    :", csv_files == cp["csv_files"])
-            print("max T error  :", np.max(np.abs(thermal.current_T - cp_T.current_T)))
-
-            all_same = (
-                    np.array_equal(thermal.current_T, cp_T.current_T)
-                    and np.array_equal(thermal.previous_T, cp_T.previous_T)
-                    and np.array_equal(thermal.Actuator, cp_T.Actuator)
-                    and np.array_equal(thermal.body, cp_T.body)
-                    and heat_loc == cp["heat_loc"]
-                    and stripe + 1 == cp["stripe"]
-                    and stripe_count == cp["stripe_count"]
-                    and global_count == cp["global_count"]
-                    and csv_files == cp["csv_files"]
-            )
-
-            print("RESULT       :", "PASS" if all_same else "FAIL")
 
             ############################################ 每一个 stripe 都进行一个保存 #####################################
             next_stripe = stripe + 1
